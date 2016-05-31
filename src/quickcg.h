@@ -24,7 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*
-QuickCG is an SDL codebase that wraps some of the SDL functionality.
+QuickCG is an SDL 1.2 codebase that wraps some of the SDL 1.2 functionality.
 It's used by Lode's Computer Graphics Tutorial to work with simple function calls
 to demonstrate graphical programs. It may or may not be of industrial strength
 for games, though I've actually used it for some.
@@ -199,7 +199,7 @@ void redraw();
 void cls(const ColorRGB& color = RGB_Black);
 void pset(int x, int y, const ColorRGB& color);
 ColorRGB pget(int x, int y);
-void drawBuffer(Uint32 *buffer);
+void drawBuffer(Uint32* buffer);
 bool onScreen(int x, int y);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -207,6 +207,7 @@ bool onScreen(int x, int y);
 ////////////////////////////////////////////////////////////////////////////////
 
 void sleep();
+void sleep(double seconds);
 void waitFrame(double oldTime, double frameDuration); //in seconds
 bool done(bool quit_if_esc = true, bool delay = true);
 void end();
@@ -251,7 +252,7 @@ void saveFile(const std::vector<unsigned char>& buffer, const std::string& filen
 
 int loadImage(std::vector<ColorRGB>& out, unsigned long& w, unsigned long& h, const std::string& filename);
 int loadImage(std::vector<Uint32>& out, unsigned long& w, unsigned long& h, const std::string& filename);
-int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_width, unsigned long& image_height, const unsigned char* in_png, unsigned long in_size);
+int decodePNG(std::vector<unsigned char>& out_image, unsigned long& image_width, unsigned long& image_height, const unsigned char* in_png, size_t in_size, bool convert_to_rgba32 = true);
 int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_width, unsigned long& image_height, const std::vector<unsigned char>& in_png);
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -29,6 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "quickcg.h"
 using namespace QuickCG;
 
+#define screenWidth 1024
+#define screenHeight 768
+#define texCount 2
+#define texWidth 128
+#define texHeight 128
 #define mapWidth 24
 #define mapHeight 24
 
@@ -36,30 +41,30 @@ static const ColorRGB RGB_Ground (0, 100, 0);
 static const ColorRGB RGB_Sky (150, 200, 255);
 
 int worldMap[mapWidth][mapHeight] = {
-	{8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8,8,8,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,8,8,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8},
-	{8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,8},
-	{8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8}
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
 int main() {
@@ -70,7 +75,28 @@ int main() {
 	double time = 0;    // time of current frame
 	double oldTime = 0; // time of previous frame
 
-	screen(1024, 768, 0, "Raycaster");
+	Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
+
+	std::vector<Uint32> texture[texCount];
+	for(int i = 0; i < texCount; i++) {
+		texture[i].resize(texWidth * texHeight);
+	}
+
+	// load textures
+	unsigned long tw, th;
+	loadImage(texture[0], tw, th, "data/textures/bricks.png");
+	loadImage(texture[1], tw, th, "data/textures/tiles.png");
+
+	// swap x/y since they're used as vertical stripes
+	for(size_t i = 0; i < texCount; i++) {
+		for(size_t x = 0; x < texHeight; x++) {
+			for(size_t y = 0; y < x; y++) {
+				std::swap(texture[i][texHeight * y + x], texture[i][texHeight * x + y]);
+			}
+		}
+	}
+
+	screen(screenWidth, screenHeight, 0, "Raycaster");
 
 	while(!done()) {
 		// for each pixel in the width of the screen
@@ -159,37 +185,41 @@ int main() {
 				wallEnd = h - 1;
 			}
 
-			// choose wall color
-			ColorRGB wallColor;
-			switch(worldMap[mapX][mapY]) {
-				case 1:  wallColor = RGB_Black;     break;
-				case 2:  wallColor = RGB_Maroon;    break;
-				case 3:  wallColor = RGB_Darkgreen; break;
-				case 4:  wallColor = RGB_Olive;     break;
-				case 5:  wallColor = RGB_Navy;      break;
-				case 6:  wallColor = RGB_Purple;    break;
-				case 7:  wallColor = RGB_Teal;      break;
-				case 8:  wallColor = RGB_Gray;      break;
-				case 9:  wallColor = RGB_Grey;      break;
-				case 10: wallColor = RGB_Red;       break;
-				case 11: wallColor = RGB_Green;     break;
-				case 12: wallColor = RGB_Yellow;    break;
-				case 13: wallColor = RGB_Blue;      break;
-				case 14: wallColor = RGB_Magenta;   break;
-				case 15: wallColor = RGB_Cyan;      break;
-				case 16: wallColor = RGB_White;     break;
-				default: wallColor = RGB_White;     break;
-			}
+			// texturing calculations
+			int texNum = worldMap[mapX][mapY] - 1; // subtract 1 so texture 0 is used
 
-			// give x and y sides different brightness
-			if (side == 1) {
-				wallColor = 4 * wallColor / 5;
+			// calculate value of wallX: where on wall the ray hit
+			double wallX;
+			if(side == 0) {
+				wallX = rayPosY + perpWallDist * rayDirY;
+			} else {
+				wallX = rayPosX + perpWallDist * rayDirX;
 			}
+			wallX -= floor((wallX));
 
-			// draw the pixels of the stripes as a vertical line
-			verLine(x, 0, wallStart, RGB_Sky);     // sky
-			verLine(x, wallStart, wallEnd, wallColor); // wall
-			verLine(x, wallEnd, h-1, RGB_Ground);  // ground
+			// x-coordinate on the texture
+			int texX = int(wallX * double(texWidth));
+			if(side == 0 && rayDirX > 0) texX = texWidth - texX - 1;
+			if(side == 1 && rayDirY < 0) texX = texWidth - texX - 1;
+
+			for(int y = wallStart; y < wallEnd; y++) {
+				int d = y * 256 - h * 128 + lineHeight * 128; // 256 and 128 factors to avoid floats
+				int texY = ((d * texHeight) / lineHeight) / 256;
+				Uint32 color = texture[texNum][texHeight * texX + texY];
+				// make color darker for y-sides:
+				// R, G, and B byte each divided by 2 with a shift and binary and
+				if(side == 1) color = (color >> 1) & 8355711;
+				buffer[y][x] = color;
+			}
+		}
+
+		drawBuffer(buffer[0]);
+
+		// clear the buffer
+		for(int x = 0; x < w; x++) {
+			for(int y = 0; y < h; y++) {
+				buffer[y][x] = 0;
+			}
 		}
 
 		// timing for input and FPS counter

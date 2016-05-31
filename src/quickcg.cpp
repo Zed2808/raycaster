@@ -190,7 +190,7 @@ void drawBuffer(Uint32* buffer)
   {
     for(int x = 0; x < w; x++)
     {
-      *bufp=buffer[h * x + y];
+      *bufp = buffer[y * w + x];
       bufp++;
     }
     bufp += scr->pitch / 4;
@@ -209,7 +209,7 @@ void getScreenBuffer(std::vector<Uint32>& buffer)
   {
     for(int x = 0; x < w; x++)
     {
-       buffer[h * x + y] = *bufp;
+       buffer[y * w + x] = *bufp;
        bufp++;
     }
     bufp += scr->pitch / 4;
@@ -232,6 +232,7 @@ bool onScreen(int x, int y)
 void sleep()
 {
   int done = 0;
+  SDL_PollEvent(&event);
   while(done == 0)
   {
     while(SDL_PollEvent(&event))
@@ -241,6 +242,11 @@ void sleep()
     }
     SDL_Delay(5); //so it consumes less processing power
   }
+}
+
+void sleep(double seconds)
+{
+  SDL_Delay(seconds * 1000);
 }
 
 void waitFrame(double oldTime, double frameDuration) //in seconds
@@ -282,6 +288,7 @@ void end()
 //Normally you have to use readkeys every time you want to use inkeys, but the done() function also uses inkeys so it's not needed to use readkeys if you use done().
 void readKeys()
 {
+  SDL_PollEvent(&event);
   inkeys = SDL_GetKeyState(NULL);
 }
 
@@ -315,7 +322,7 @@ unsigned long getTicks()
 //Fast horizontal line from (x1,y) to (x2,y), with rgb color
 bool horLine(int y, int x1, int x2, const ColorRGB& color)
 {
-  if(x2 < x1) {x1 += x2; x2 = x1 - x2; x1 -= x2;} //swap x1 and x2, x1 must be the leftmost endpoint   
+  if(x2 < x1) {x1 += x2; x2 = x1 - x2; x1 -= x2;} //swap x1 and x2, x1 must be the leftmost endpoint
   if(x2 < 0 || x1 >= w || y < 0 || y >= h) return 0; //no single point of the line is on screen
   if(x1 < 0) x1 = 0; //clip
   if(x2 >= w) x2 = w - 1; //clip
@@ -1168,10 +1175,10 @@ void decodeBase64(std::vector<unsigned char>& out, const std::string& in)
 // PNG                                                                        //
 ////////////////////////////////////////////////////////////////////////////////
 
-int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_width, unsigned long& image_height, const unsigned char* in_png, unsigned long in_size)
+int decodePNG(std::vector<unsigned char>& out_image, unsigned long& image_width, unsigned long& image_height, const unsigned char* in_png, size_t in_size, bool convert_to_rgba32)
 {
-  // picoPNG version 20071020
-  // Copyright (c) 2005-2007 Lode Vandevenne
+  // picoPNG version 20101224
+  // Copyright (c) 2005-2010 Lode Vandevenne
   //
   // This software is provided 'as-is', without any express or implied
   // warranty. In no event will the authors be held liable for any damages
@@ -1189,14 +1196,11 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
   //     misrepresented as being the original software.
   //     3. This notice may not be removed or altered from any source distribution.
 
-  // picoPNG is a PNG decoder in one C++ function. Use picoPNG for programs that need
-  // only 1 .cpp file. Apologies for the compact code style, it's to make it tiny.
-
-  static const unsigned long lengthbase[29] =  {3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
-  static const unsigned long lengthextra[29] = {0,0,0,0,0,0,0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5,  0};
-  static const unsigned long distancebase[30] =  {1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577};
-  static const unsigned long distanceextra[30] = {0,0,0,0,1,1,2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8,  8,   9,   9,  10,  10,  11,  11,  12,   12,   13,   13};
-  static const unsigned long clcl[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15}; //code length code lengths
+  static const unsigned long LENBASE[29] =  {3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
+  static const unsigned long LENEXTRA[29] = {0,0,0,0,0,0,0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5,  0};
+  static const unsigned long DISTBASE[30] =  {1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577};
+  static const unsigned long DISTEXTRA[30] = {0,0,0,0,1,1,2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8,  8,   9,   9,  10,  10,  11,  11,  12,   12,   13,   13};
+  static const unsigned long CLCL[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15}; //code length code lengths
   struct Zlib //nested functions for zlib decompression
   {
     static unsigned long readBitFromStream(size_t& bitp, const unsigned char* bits) { unsigned long result = (bits[bitp >> 3] >> (bitp & 0x7)) & 1; bitp++; return result;}
@@ -1268,7 +1272,7 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
         tree.makeFromLengths(bitlen, 15);
         treeD.makeFromLengths(bitlenD, 15);
       }
-      HuffmanTree codetree, codetreeD, codelengthcodetree; //the code tree for Huffman codes, distance codes, and code length codes
+      HuffmanTree codetree, codetreeD, codelengthcodetree; //the code tree for Huffman codes, dist codes, and code length codes
       unsigned long huffmanDecodeSymbol(const unsigned char* in, size_t& bp, const HuffmanTree& codetree, size_t inlength)
       { //decode a single symbol from given list of bits with given code tree. return value is the symbol
         bool decoded; unsigned long ct;
@@ -1277,16 +1281,17 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
           if((bp & 0x07) == 0 && (bp >> 3) > inlength) { error = 10; return 0; } //error: end reached without endcode
           error = codetree.decode(decoded, ct, treepos, readBitFromStream(bp, in)); if(error) return 0; //stop, an error happened
           if(decoded) return ct;
-      } }
+        }
+      }
       void getTreeInflateDynamic(HuffmanTree& tree, HuffmanTree& treeD, const unsigned char* in, size_t& bp, size_t inlength)
       { //get the tree of a deflated block with dynamic tree, the tree itself is also Huffman compressed with a known tree
         std::vector<unsigned long> bitlen(288, 0), bitlenD(32, 0);
         if(bp >> 3 >= inlength - 2) { error = 49; return; } //the bit pointer is or will go past the memory
         size_t HLIT =  readBitsFromStream(bp, in, 5) + 257; //number of literal/length codes + 257
-        size_t HDIST = readBitsFromStream(bp, in, 5) + 1; //number of distance codes + 1
+        size_t HDIST = readBitsFromStream(bp, in, 5) + 1; //number of dist codes + 1
         size_t HCLEN = readBitsFromStream(bp, in, 4) + 4; //number of code length codes + 4
         std::vector<unsigned long> codelengthcode(19); //lengths of tree to decode the lengths of the dynamic tree
-        for(size_t i = 0; i < 19; i++) codelengthcode[clcl[i]] = (i < HCLEN) ? readBitsFromStream(bp, in, 3) : 0;
+        for(size_t i = 0; i < 19; i++) codelengthcode[CLCL[i]] = (i < HCLEN) ? readBitsFromStream(bp, in, 3) : 0;
         error = codelengthcodetree.makeFromLengths(codelengthcode, 7); if(error) return;
         size_t i = 0, replength;
         while(i < HLIT + HDIST)
@@ -1314,7 +1319,8 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
             {
               if(i >= HLIT + HDIST) { error = 14; return; } //error: i is larger than the amount of codes
               if(i < HLIT) bitlen[i++] = 0; else bitlenD[i++ - HLIT] = 0;
-          } }
+            }
+          }
           else if(code == 18) //repeat "0" 11-138 times
           {
             if(bp >> 3 >= inlength) { error = 50; return; } //error, bit pointer jumps past memory
@@ -1323,14 +1329,15 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
             {
               if(i >= HLIT + HDIST) { error = 15; return; } //error: i is larger than the amount of codes
               if(i < HLIT) bitlen[i++] = 0; else bitlenD[i++ - HLIT] = 0;
-          } }
+            }
+          }
           else { error = 16; return; } //error: somehow an unexisting code appeared. This can never happen.
         }
         if(bitlen[256] == 0) { error = 64; return; } //the length of the end code 256 must be larger than 0
         error = tree.makeFromLengths(bitlen, 15); if(error) return; //now we've finally got HLIT and HDIST, so generate the code trees, and the function is done
         error = treeD.makeFromLengths(bitlenD, 15); if(error) return;
       }
-      void inflateHuffmanBlock(std::vector<unsigned char>& out, const unsigned char* in, size_t& bp, size_t& pos, size_t inlength, unsigned long btype) 
+      void inflateHuffmanBlock(std::vector<unsigned char>& out, const unsigned char* in, size_t& bp, size_t& pos, size_t inlength, unsigned long btype)
       {
         if(btype == 1) { generateFixedTrees(codetree, codetreeD); }
         else if(btype == 2) { getTreeInflateDynamic(codetree, codetreeD, in, bp, inlength); if(error) return; }
@@ -1345,21 +1352,20 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
           }
           else if(code >= 257 && code <= 285) //length code
           {
-            size_t length = lengthbase[code - 257], numextrabits = lengthextra[code - 257];
+            size_t length = LENBASE[code - 257], numextrabits = LENEXTRA[code - 257];
             if((bp >> 3) >= inlength) { error = 51; return; } //error, bit pointer will jump past memory
             length += readBitsFromStream(bp, in, numextrabits);
             unsigned long codeD = huffmanDecodeSymbol(in, bp, codetreeD, inlength); if(error) return;
-            if(codeD > 29) { error = 18; return; } //error: invalid distance code (30-31 are never used)
-            unsigned long distance = distancebase[codeD], numextrabitsD = distanceextra[codeD];
+            if(codeD > 29) { error = 18; return; } //error: invalid dist code (30-31 are never used)
+            unsigned long dist = DISTBASE[codeD], numextrabitsD = DISTEXTRA[codeD];
             if((bp >> 3) >= inlength) { error = 51; return; } //error, bit pointer will jump past memory
-            distance += readBitsFromStream(bp, in, numextrabitsD);
-            size_t start = pos, backward = start - distance;
+            dist += readBitsFromStream(bp, in, numextrabitsD);
+            size_t start = pos, back = start - dist; //backwards
             if(pos + length >= out.size()) out.resize((pos + length) * 2); //reserve more room
-            for(size_t forward = 0; forward < length; forward++)
-            {
-              out[pos++] = out[backward++];
-              if(backward >= start) backward = start - distance;
-      } } } }
+            for(size_t i = 0; i < length; i++) { out[pos++] = out[back++]; if(back >= start) back = start - dist; }
+          }
+        }
+      }
       void inflateNoCompression(std::vector<unsigned char>& out, const unsigned char* in, size_t& bp, size_t& pos, size_t inlength)
       {
         while((bp & 0x7) != 0) bp++; //go to first boundary of byte
@@ -1394,14 +1400,14 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
       std::vector<unsigned char> palette;
     } info;
     int error;
-    void decode(std::vector<unsigned char>& out, const unsigned char* in, unsigned long size)
+    void decode(std::vector<unsigned char>& out, const unsigned char* in, size_t size, bool convert_to_rgba32)
     {
       error = 0;
       if(size == 0 || in == 0) { error = 48; return; } //the given data is empty
       readPngHeader(&in[0], size); if(error) return;
       size_t pos = 33; //first byte of the first chunk after the header
       std::vector<unsigned char> idat; //the data from idat chunks
-      bool IEND = false;
+      bool IEND = false, known_type = true;
       info.key_defined = false;
       while(!IEND) //loop through the chunks, ignoring unknown chunks and stopping at IEND chunk. IDAT data is put at the start of the in buffer
       {
@@ -1409,7 +1415,6 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
         size_t chunkLength = read32bitInt(&in[pos]); pos += 4;
         if(chunkLength > 2147483647) { error = 63; return; }
         if(pos + chunkLength >= size) { error = 35; return; } //error: size of the in buffer too small to contain next chunk
-
         if(in[pos + 0] == 'I' && in[pos + 1] == 'D' && in[pos + 2] == 'A' && in[pos + 3] == 'T') //IDAT chunk, containing compressed image data
         {
           idat.insert(idat.end(), &in[pos + 4], &in[pos + 4 + chunkLength]);
@@ -1425,7 +1430,8 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
           {
             for(size_t j = 0; j < 3; j++) info.palette[i + j] = in[pos++]; //RGB
             info.palette[i + 3] = 255; //alpha
-        } }
+          }
+        }
         else if(in[pos + 0] == 't' && in[pos + 1] == 'R' && in[pos + 2] == 'N' && in[pos + 3] == 'S') //palette transparency chunk (tRNS)
         {
           pos += 4; //go after the 4 letters
@@ -1453,6 +1459,7 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
         {
           if(!(in[pos + 0] & 32)) { error = 69; return; } //error: unknown critical chunk (5th bit of first byte of chunk type is 0)
           pos += (chunkLength + 4); //skip 4 letters and uninterpreted data of unimplemented chunk
+          known_type = false;
         }
         pos += 4; //step over CRC (which is ignored)
       }
@@ -1484,23 +1491,26 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
             unFilterScanline(&templine[0], &scanlines[linestart + 1], prevline, bytewidth, filterType, linelength); if(error) return;
             for(size_t bp = 0; bp < info.width * bpp;) setBitOfReversedStream(obp, out_, readBitFromReversedStream(bp, &templine[0]));
             linestart += (1 + linelength); //go to start of next scanline
-      } } }
+          }
+        }
+      }
       else //interlaceMethod is 1 (Adam7)
       {
         size_t passw[7] = { (info.width + 7) / 8, (info.width + 3) / 8, (info.width + 3) / 4, (info.width + 1) / 4, (info.width + 1) / 2, (info.width + 0) / 2, (info.width + 0) / 1 };
         size_t passh[7] = { (info.height + 7) / 8, (info.height + 7) / 8, (info.height + 3) / 8, (info.height + 3) / 4, (info.height + 1) / 4, (info.height + 1) / 2, (info.height + 0) / 2 };
         size_t passstart[7] = {0};
-        size_t pattern[28] = {0, 4, 0, 2, 0, 1, 0, 0, 0, 4, 0, 2, 0, 1, 8, 8, 4, 4, 2, 2, 1, 8, 8, 8, 4, 4, 2, 2}; //values for the adam7 passes
+        size_t pattern[28] = {0,4,0,2,0,1,0,0,0,4,0,2,0,1,8,8,4,4,2,2,1,8,8,8,4,4,2,2}; //values for the adam7 passes
         for(int i = 0; i < 6; i++) passstart[i + 1] = passstart[i] + passh[i] * ((passw[i] ? 1 : 0) + (passw[i] * bpp + 7) / 8);
         std::vector<unsigned char> scanlineo((info.width * bpp + 7) / 8), scanlinen((info.width * bpp + 7) / 8); //"old" and "new" scanline
         for(int i = 0; i < 7; i++)
           adam7Pass(&out_[0], &scanlinen[0], &scanlineo[0], &scanlines[passstart[i]], info.width, pattern[i], pattern[i + 7], pattern[i + 14], pattern[i + 21], passw[i], passh[i], bpp);
       }
-      if(info.colorType != 6 || info.bitDepth != 8) //conversion needed
+      if(convert_to_rgba32 && (info.colorType != 6 || info.bitDepth != 8)) //conversion needed
       {
         std::vector<unsigned char> data = out;
         error = convert(out, &data[0], info, info.width, info.height);
-    } }
+      }
+    }
     void readPngHeader(const unsigned char* in, size_t inlength) //read the information from the header and store it in the Info
     {
       if(inlength < 29) { error = 27; return; } //error: the data length is smaller than the length of the header
@@ -1541,17 +1551,18 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
         case 4:
           if(precon)
           {
-            for(size_t i =         0; i < bytewidth; i++) recon[i] = (unsigned char)(scanline[i] + paethPredictor(0, precon[i], 0));
-            for(size_t i = bytewidth; i <    length; i++) recon[i] = (unsigned char)(scanline[i] + paethPredictor(recon[i - bytewidth], precon[i], precon[i - bytewidth]));
+            for(size_t i =         0; i < bytewidth; i++) recon[i] = scanline[i] + paethPredictor(0, precon[i], 0);
+            for(size_t i = bytewidth; i <    length; i++) recon[i] = scanline[i] + paethPredictor(recon[i - bytewidth], precon[i], precon[i - bytewidth]);
           }
           else
           {
             for(size_t i =         0; i < bytewidth; i++) recon[i] = scanline[i];
-            for(size_t i = bytewidth; i <    length; i++) recon[i] = (unsigned char)(scanline[i] + paethPredictor(recon[i - bytewidth], 0, 0));
+            for(size_t i = bytewidth; i <    length; i++) recon[i] = scanline[i] + paethPredictor(recon[i - bytewidth], 0, 0);
           }
           break;
         default: error = 36; return; //error: unexisting filter type given
-    } }
+      }
+    }
     void adam7Pass(unsigned char* out, unsigned char* linen, unsigned char* lineo, const unsigned char* in, unsigned long w, size_t passleft, size_t passtop, size_t spacex, size_t spacey, size_t passw, size_t passh, unsigned long bpp)
     { //filter and reposition the pixels into the output when the image is Adam7 interlaced. This function can only do it after the full image is already decoded. The out buffer must have the correct allocated memory size already.
       if(passw == 0) return;
@@ -1568,40 +1579,23 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
           for(size_t b = 0; b < bpp; b++) setBitOfReversedStream(obp, out, readBitFromReversedStream(bp, &linen[0]));
         }
         unsigned char* temp = linen; linen = lineo; lineo = temp; //swap the two buffer pointers "line old" and "line new"
-    } }
-    static unsigned long readBitFromReversedStream(size_t& bitp, const unsigned char* bits) { unsigned long result = (bits[bitp >> 3] >> ((7 - bitp) & 0x7)) & 1; bitp++; return result;}
+      }
+    }
+    static unsigned long readBitFromReversedStream(size_t& bitp, const unsigned char* bits) { unsigned long result = (bits[bitp >> 3] >> (7 - (bitp & 0x7))) & 1; bitp++; return result;}
     static unsigned long readBitsFromReversedStream(size_t& bitp, const unsigned char* bits, unsigned long nbits)
     {
       unsigned long result = 0;
       for(size_t i = nbits - 1; i < nbits; i--) result += ((readBitFromReversedStream(bitp, bits)) << i);
       return result;
     }
-    void setBitOfReversedStream(size_t& bitp, unsigned char* bits, unsigned long bit) { bits[bitp >> 3] |=  (bit << ((7 - bitp) & 0x7)); bitp++; }
+    void setBitOfReversedStream(size_t& bitp, unsigned char* bits, unsigned long bit) { bits[bitp >> 3] |=  (bit << (7 - (bitp & 0x7))); bitp++; }
     unsigned long read32bitInt(const unsigned char* buffer) { return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3]; }
     int checkColorValidity(unsigned long colorType, unsigned long bd) //return type is a LodePNG error code
     {
-      //if((colorType == 2 || colorType == 4 || colorType == 6)) if(!(bd == 8 || bd == 16)) return 37;
-      //else if(colorType == 0) if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16)) return 37;
-      //else if(colorType == 3) if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8            )) return 37;
-      //else return 31; //unexisting color type
-      //return 0; //allowed color type / bits combination
-
-      if((colorType == 2 || colorType == 4 || colorType == 6)) {
-        if(!(bd == 8 || bd == 16)) {
-          return 37;
-        }
-      } else if(colorType == 0) {
-        if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16)) {
-          return 37;
-        }
-      } else if(colorType == 3) {
-        if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8)) {
-          return 37;
-        }
-      } else {
-        return 31; //unexisting color type
-      }
-      return 0; //allowed color type / bits combination
+      if((colorType == 2 || colorType == 4 || colorType == 6)) { if(!(bd == 8 || bd == 16)) return 37; else return 0; }
+      else if(colorType == 0) { if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16)) return 37; else return 0; }
+      else if(colorType == 3) { if(!(bd == 1 || bd == 2 || bd == 4 || bd == 8            )) return 37; else return 0; }
+      else return 31; //unexisting color type
     }
     unsigned long getBpp(const Info& info)
     {
@@ -1674,13 +1668,13 @@ int decodePNG(std::vector<unsigned char>& out_image_32bit, unsigned long& image_
       }
       return 0;
     }
-    long paethPredictor(long a, long b, long c) //Paeth predicter, used by PNG filter type 4
+    unsigned char paethPredictor(short a, short b, short c) //Paeth predicter, used by PNG filter type 4
     {
-      long p = a + b - c, pa = p > a ? p - a : a - p, pb = p > b ? p - b : b - p, pc = p > c ? p - c : c - p;
-      return (pa <= pb && pa <= pc) ? a : pb <= pc ? b : c;
+      short p = a + b - c, pa = p > a ? (p - a) : (a - p), pb = p > b ? (p - b) : (b - p), pc = p > c ? (p - c) : (c - p);
+      return (unsigned char)((pa <= pb && pa <= pc) ? a : pb <= pc ? b : c);
     }
   };
-  PNG decoder; decoder.decode(out_image_32bit, in_png, in_size);
+  PNG decoder; decoder.decode(out_image, in_png, in_size, convert_to_rgba32);
   image_width = decoder.info.width; image_height = decoder.info.height;
   return decoder.error;
 }
@@ -1706,29 +1700,28 @@ struct GenerateFont
     The background color is black, not transparent.
     */
     const std::string font8x8string = "\
-iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAQMAAAD58POIAAAABlBMVEUAAAD///+l2Z/dAAAEtklE\n\
-QVRIiY1VP2scRxR/OKA0g6RyQIcFwR/ggcN5i0WCfIc0qQbZjF1Mcbi4PMhm5XQp8gEsMKRKkzpl\n\
-DAOCIcVD7sTBKeaqcyPMQYK8xTCb9/ZOUowS8Nzs7OzvfvP+zXszAG0bdqtd6KHfqQ+PTwB+6EvV\n\
-CFCffu4fPv4G4Jd5aarKvvMnO/7wuB4YpTT16Vevv/f4+B3A69OmKUUBrgfg5F1VnTe6hO3k6bBk\n\
-V5oK5Xa1FKFtC1BVqpbsIp7Ai3vWH7dgrYV1W2zXfn4KdW0twgPbQ3fQ+jnJQmtc9HUPpVj/HeuS\n\
-UmIvArsD6/dYCK0y+lpktLBHbW1ri+VBb0VL7fd+am+1AMisEzNuGoaAUDnrhq8tAAqhScEhehTA\n\
-KFAiV9HZGtfrEQLZKTjbZ8jyJb0YvIANY5AUOs+gMiaAcViCaQqqBQFfwL/bwCckGuUqE6kKR8Ar\n\
-5jo6Zh6WMFygMaGLhhnRZWsgY1Wx6Sw1KCqMhUt0phhGFqOFgSBTFr5jixNUQylnMkSOJoiiBe+Y\n\
-AQ3mOsveMt1frlKqIJH34ejIMxrv3i8DvGUf/bNnUYDgylUSoImeKGY05M7fCpAHxpmoD0fpLEFk\n\
-leFEhkxSCkCsWlYHTLQsquVOyyQ/5pS4UKRdAM+efxsAds5WA7AQ/1Lglw5tENO5qQQ4rwidtUk8\n\
-uqCRACXgkTOaAY6CmEDvEya3pcBqtCTKmBIVukd3reglaAsYQQULtIvJkC8SKANBw7WOn8RfYuqm\n\
-YUIeLzuRYjw3sn1TsQqL7l/jI2fHHi3huQLiC0fXeGUkBaa/05RWZkmzJSW+saQDmNxas7t+jexi\n\
-up5u9g8tXlRwMZ01zRCgLIBY6DnETYDUh6QADQGSDBJGgqZx5kumEpona8CZVWenGJLJogUKrO7f\n\
-WjI0glHLCwQZuFmw5BjDqVoigwhAhAhUE1Ejw6SaiCuSwlvGmCg+ixZxTnb/oGma2Ga1VARY1j+5\n\
-cTEKkDOYlg7btt1SQTUJYxOR+iYWIzggtQYS24pX21pyLDYtuAIbeLYH+ZjX1IbbJzSTdDdFxIme\n\
-xHGV/26BjnndBHDIwth8Z1myzG+tyDiTJW1rKrIZeXajvhsOgu0JjDR3c62Fn9LGtFEHwYM6bh+K\n\
-6bqDHPQ0mc3AezBI3F0e1C7ng78sP5SaU50AMZrHT60wtG75om05mrM3tchoxQhNE/H35c+3QRja\n\
-/meayV98/aeccmOA8Vi6ID/++u3HwMDoxtBdjcvVuLtl2K3x1tY1o+uuijCuSum6a8ZY+lgz/VrL\n\
-LXCHISetDqpUf/8L7I8fHX7oH/Uf+hsG4iaj9/te+6ND+XtgwMCxgwAdPgHQbvWxUsSrnf4/AOn7\n\
-+/L6iGHldQ30fX+4vy9mdmLOakeVjPVRJz4ZkFY0RapqBJLPsoelePDT4d4xjmEqFYqtv6CUbNtG\n\
-Oei7GCx7yyU183lm+INjQAWklOfzDUPOGCtXlVx/KiPGUMhZrN4TuFoyJariKNcTbOZyJm5LjUu6\n\
-7ugdI7cH4p7F53JwmmCUka3bs/BqAKp6zbA2Q2UFcPVahgTouQT6MjTKUIdn+EqLb12cOWcBPi5V\n\
-O9lUrLR/ABF/3H2EtBmWAAAAAElFTkSuQmCC";
+iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAQAAAADrRVxmAAAEjklEQVR4AY2TBYhsyRWG/9hqPcEP\n\
+TLOO24n1u8Bdxd3iWK1VrICOdQ6kcmeDRXGJJ0gch6CxgoGKHV7Qx8A8aWxdOjZ7gaLuVt2RdfnL\n\
+mq//I9eAYfDnu/OYMJ3r7939IfCNqXShgn7vevfBhz8F/PKghK6jJ9wPz7l7d/vZUUro9x7409cd\n\
+P/wE8Ke9EEppQPsZ/PCJrrsUWojS6tNzyPmqllSH7eOfamWBrmtlhTbxh3js3eR2BxARjrQ527uD\n\
+PfQ9EeMumjDeM7gDqYFkbHT9hFLIfU1bSClxGobqILej1TA0x9TXHAN2ZOipJy53TVSr9G7ne0Or\n\
+ciICRkw4FXvP6CxZNF0HiPchecvsGIBpoETtoqWej+IZXmgNS1NGBjdQDF/GsWPO5EenaDlW4DiH\n\
+cFqjVWHwYzjViV9YZJG7LAIQrEC3qn20qjqHKC6zMX6MRpXZZjLI3HVqRpLAHGEIz7I1xSirAaqD\n\
+oaxa/VaJVwwGJGcxIlZWzATLr2sDgXOfS+lVbnl8m1KHJM75hx5yysbZ5x/3uKouus98JlbgbTlM\n\
+FYToRGJmI/bS1Qry7LiorP6hdDEhasthXQXOpeQh2qps71GRx0ur8jplqUM1JS0S5Tzg1OnvZ6DW\n\
+UjeDDVfg9QeWyQNBQ1fBpU7YEiXAXpZFBcXzQ9YQKhCvrPJ84mSva2C7eFwkc0pS5N2C12kCY4MF\n\
+OmyYNquGGBYGvu7H948kiBG79itx/OwogHEadKtrJs9FFQguarbqmIQvNaBONdrgmiM1sP6jrGVr\n\
+Hpf9xyWp4FgjsMKpzmPWgjbro5+MWUx8ucPl9X4I8w3KFcDDqY/HN6hdQ2pA5huk3BwJIVjzIZXi\n\
+wyNHwJrtSGv2yeRaBQXbW17uZJZgMeiGUTcNG2WoYg/gtiGBGRHSi0io26pbCaCq1xljolNlYhWI\n\
+5ntCCHHIuQEFaftTg42xgpxhBrl3GIbrWqJeVCGY1eNEC9wjaDgpdbo9C8CrburoQF73d5B3FbOC\n\
+Do/IPsGaIiKqmjRu8/8GyK7OasCyVoceKdeQx/NVqjkuisgwmE4os+7jRCNAwNkVFh2A3PcMpHTc\n\
+2mKEdwBU6YMKWQFQ7xjY34dzMCw6PntPb3O+57+kH0TgVhOI0Tz8aaoObeDyMGg0F//V1xyDyKAK\n\
+CPCDn/d4lW59DwG446NXiGgJLJd1VvKt33311WB2jEuMh8tyuBxfdtB1y+uuO3GM42GpjsNSxvHE\n\
+saxzCYCa49XgdQ6qE41gHm8Kbl1euPfF6cL04nTqYAZ4vqJpavPCvfXv2YHZQ3OCtr0D0Ca1RZiw\n\
+PTe9Aajz1lvr8SoH1eMETNN076231jbH2s72HABattUu4h2DqgIgd90C1/UCSCkObs3eM4xVrDV5\n\
+HtxlSYmGISouj9GTOtKSwsFBVvxNo+cGkteDg2OH00DivQ5DyxGjL2KJu+cFtlcgAm3LR0cVWzpL\n\
+jA44JwIgM/MO8Rc9YLxBI2R3CD+ZQdcfOYgyOqrA9kc5iPBFED3rQ3MAoH3+CQAPNEfOuYJXf6q0\n\
+QtOibS8BEX/cffjo+7IAAAAASUVORK5CYII=";
 
     std::vector<unsigned char> png, image;
     decodeBase64(png, font8x8string);
