@@ -140,9 +140,9 @@ int main() {
 
 			// calculate distance projected on camera direction (oblique distance will give fisheye effect!)
 			if (side == 0) {
-				perpWallDist = fabs((mapX - rayPosX + (1 - stepX) / 2) / rayDirX);
+				perpWallDist = (mapX - rayPosX + (1 - stepX) / 2) / rayDirX;
 			} else {
-				perpWallDist = fabs((mapY - rayPosY + (1 - stepY) / 2) / rayDirY);
+				perpWallDist = (mapY - rayPosY + (1 - stepY) / 2) / rayDirY;
 			}
 
 			// calculate height of line to draw on screen
