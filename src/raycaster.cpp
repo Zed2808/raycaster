@@ -37,9 +37,9 @@ using namespace QuickCG;
 #define mapWidth 24
 #define mapHeight 24
 
-#define texCount 4            // number of textures to load
-#define numSprites 3          // number of sprite instances in the map
-#define numWeapons 2          // number of weapons to load
+#define texCount 4   // number of textures to load
+#define numSprites 3 // number of sprite instances in the map
+#define numWeapons 2 // number of weapons to load
 
 struct Sprite {
 	double x;
@@ -107,77 +107,42 @@ int spriteOrder[numSprites];
 double spriteDistance[numSprites];
 
 void loadWeapons() {
-	// weapons to load
-	Weapon shotgun;
-	Weapon supershotgun;
-
-
+	// initialize weapons
+	for(int i = 0; i < numWeapons; i++) {
+		weapon[i] = Weapon();
+	}
 
 	// SHOTGUN
-	// weapon name
-	shotgun.name = "shotgun";
-
-	// number of frames to load
-	shotgun.frameCount = 6;
-
-	// set size of vectors to number of frames to load
-	shotgun.frameSmall.resize(shotgun.frameCount);
-	shotgun.frame.resize(shotgun.frameCount);
-
-	// width & height of frames to load
-	shotgun.frameSmallWidth = {79, 79, 79, 119, 87, 113};
-	shotgun.frameSmallHeight = {60, 73, 82, 121, 151, 131};
-
-	// set width & height of frames to double what they were loaded as
-	shotgun.frameWidth.resize(shotgun.frameCount);
-	shotgun.frameHeight.resize(shotgun.frameCount);
-	for(int i = 0; i < shotgun.frameCount; i++) {
-		shotgun.frameWidth[i] = shotgun.frameSmallWidth[i] * 2;
-		shotgun.frameHeight[i] = shotgun.frameSmallHeight[i] * 2;
-	}
-
-	// set frame sequence for weapon animation
-	shotgun.frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};
-
-	// time each frame lasts in milliseconds
-	shotgun.frameTime = 100;
-
-
+	weapon[0].name = "shotgun";                               // weapon name
+	weapon[0].frameCount = 6;                                 // number of frames to load
+	weapon[0].frameSmallWidth = {79, 79, 79, 119, 87, 113};   // width of frames to load
+	weapon[0].frameSmallHeight = {60, 73, 82, 121, 151, 131}; // height of frames to load
+	weapon[0].frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};       // animation frame sequence
+	weapon[0].frameTime = 100;                                // time each frame lasts in milliseconds
 
 	// SUPERSHOTGUN
-	// weapon name
-	supershotgun.name = "supershotgun";
+	weapon[1].name = "supershotgun";
+	weapon[1].frameCount = 9;
+	weapon[1].frameSmallWidth = {59, 59, 65, 83, 121, 81, 201, 88, 77};
+	weapon[1].frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
+	weapon[1].frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
+	weapon[1].frameTime = 100;
 
-	// number of frames to load
-	supershotgun.frameCount = 9;
-
-	// set size of vectors to number of frames to load
-	supershotgun.frameSmall.resize(supershotgun.frameCount);
-	supershotgun.frame.resize(supershotgun.frameCount);
-
-	// width & height of frames to load
-	supershotgun.frameSmallWidth = {59, 59, 65, 83, 121, 81, 201, 88, 77};
-	supershotgun.frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
-
-	// set width & height of frames to double what they were loaded as
-	supershotgun.frameWidth.resize(supershotgun.frameCount);
-	supershotgun.frameHeight.resize(supershotgun.frameCount);
-	for(int i = 0; i < supershotgun.frameCount; i++) {
-		supershotgun.frameWidth[i] = supershotgun.frameSmallWidth[i] * 2;
-		supershotgun.frameHeight[i] = supershotgun.frameSmallHeight[i] * 2;
+	// set size of frame vectors to number of frames to load
+	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
+		weapon[weaponNum].frameSmall.resize(weapon[weaponNum].frameCount);
+		weapon[weaponNum].frame.resize(weapon[weaponNum].frameCount);
 	}
 
-	// set frame sequence for weapon animation
-	supershotgun.frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
-
-	// time each frame lasts in milliseconds
-	supershotgun.frameTime = 100;
-
-
-
-	// load new weapons into weapon vector
-	weapon[0] = shotgun;
-	weapon[1] = supershotgun;
+	// set width & height of frame to double frameSmall (the frames used to load the images)
+	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
+		weapon[weaponNum].frameWidth.resize(weapon[weaponNum].frameCount);
+		weapon[weaponNum].frameHeight.resize(weapon[weaponNum].frameCount);
+		for(int frameNum = 0; frameNum < weapon[weaponNum].frameCount; frameNum++) {
+			weapon[weaponNum].frameWidth[frameNum] = weapon[weaponNum].frameSmallWidth[frameNum] * 2;
+			weapon[weaponNum].frameHeight[frameNum] = weapon[weaponNum].frameSmallHeight[frameNum] * 2;
+		}
+	}
 
 	// set size of frameSmall[i] to size of image to load
 	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
