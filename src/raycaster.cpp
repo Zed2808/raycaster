@@ -29,15 +29,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "quickcg.h"
 using namespace QuickCG;
 
-#define screenWidth 1024
-#define screenHeight 768
+#define fullscreen 0
+#define screenWidth 640
+#define screenHeight 480
 #define texWidth 128
 #define texHeight 128
 #define mapWidth 24
 #define mapHeight 24
 
-#define texCount 4   // number of textures to load
-#define numSprites 3 // number of sprite instances in the map
+#define texCount 4    // number of textures to load
+#define weaponCount 1 // number of weapon sprites
+#define numSprites 3  // number of sprite instances in the map
 
 struct Sprite {
 	double x;
@@ -119,6 +121,7 @@ int main() {
 	double time = 0;    // time of current frame
 	double oldTime = 0; // time of previous frame
 
+	// texture vector
 	std::vector<Uint32> texture[texCount];
 	for(int i = 0; i < texCount; i++) {
 		texture[i].resize(texWidth * texHeight);
@@ -131,6 +134,28 @@ int main() {
 	loadImage(texture[2], tw, th, "data/textures/ceiling.png");
 	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
 
+	// load weapons
+	std::vector<Uint32> weaponLoader[weaponCount];
+	for(int i = 0; i < weaponCount; i++) {
+		weaponLoader[i].resize(128 * 128);
+	}
+
+	loadImage(weaponLoader[0], tw, th, "data/weapons/shotgun.png");
+
+	// weapon vector
+	std::vector<Uint32> weapon[weaponCount];
+	for(int i = 0; i < weaponCount; i++) {
+		weapon[i].resize(256 * 256);
+		for(int y = 0; y < 128; y++) {
+			for(int x = 0; x < 128; x++) {
+				weapon[i][512 * y + 2 * x] = weaponLoader[i][128 * y + x];
+				weapon[i][512 * y + 2 * x + 1] = weaponLoader[i][128 * y + x];
+				weapon[i][512 * y + 2 * x + 256] = weaponLoader[i][128 * y + x];
+				weapon[i][512 * y + 2 * x + 257] = weaponLoader[i][128 * y + x];
+			}
+		}
+	}
+
 	// swap x/y since they're used as vertical stripes
 	for(size_t i = 0; i < texCount; i++) {
 		for(size_t x = 0; x < texHeight; x++) {
@@ -140,7 +165,7 @@ int main() {
 		}
 	}
 
-	screen(screenWidth, screenHeight, 0, "Raycaster");
+	screen(screenWidth, screenHeight, fullscreen, "Raycaster");
 
 	while(!done()) {
 		// for each pixel in the width of the screen
@@ -375,6 +400,20 @@ int main() {
 			}
 		}
 
+		// draw weapon
+		int drawStartY = h - 256;
+		int drawEndY = drawStartY + 256;
+		int drawStartX = (w / 2) - 128;
+		int drawEndX = drawStartX + 256;
+		for(int y = drawStartY; y < drawEndY; y++) {
+			for(int x = drawStartX; x < drawEndX; x++) {
+				Uint32 color = weapon[0][256 * (y - drawStartY) + (x - drawStartX)];
+				if(INTtoRGB(color) != ColorRGB(0, 255, 0)) {
+					buffer[y][x] = color;
+				}
+			}
+		}
+
 		drawBuffer(buffer[0]);
 
 		// clear the buffer
@@ -389,7 +428,7 @@ int main() {
 		time = getTicks();
 		double frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
 
-		printString(std::to_string(int(1.0/frameTime)) + " FPS", 3, 3, RGB_Black, true, RGB_White); // FPS counter
+		printString(std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black); // FPS counter
 
 		redraw();
 
