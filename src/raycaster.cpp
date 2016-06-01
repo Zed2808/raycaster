@@ -39,13 +39,20 @@ using namespace QuickCG;
 
 #define texCount 4            // number of textures to load
 #define numSprites 3          // number of sprite instances in the map
-#define weaponCount 3         // number of weapon sprites
-#define weaponFrameLength 100 // length of weapon animation frame in milliseconds
+#define numWeapons 1          // number of weapons to load
 
 struct Sprite {
 	double x;
 	double y;
 	int texture;
+};
+
+struct Weapon {
+	int frameCount;
+	std::vector<std::vector<Uint32>> frameSmall;
+	std::vector<std::vector<Uint32>> frame;
+	std::vector<int> frameSequence;
+	std::vector<int> frameTime;
 };
 
 int worldMap[mapWidth][mapHeight] = {
@@ -82,11 +89,11 @@ Sprite sprite[numSprites] = {
 	{21.5, 15.5,  3}
 };
 
-Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
+// weapons to load
+Weapon weapon[numWeapons];
+Weapon shotgun;
 
-// weapon vectors
-std::vector<Uint32> weaponLoader[weaponCount];
-std::vector<Uint32> weapon[weaponCount];
+Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
 
 // 1D z-buffer
 double ZBuffer[screenWidth];
@@ -118,14 +125,15 @@ void combSort(int* order, double* dist, int amount) {
 	}
 }
 
-void drawWeapon(int id) {
+void drawWeapon(int id, int seq) {
 	int drawStartY = h - 256;
 	int drawEndY = drawStartY + 256;
 	int drawStartX = (w / 2) - 128;
 	int drawEndX = drawStartX + 256;
+	int frame = weapon[id].frameSequence[seq];
 	for(int y = drawStartY; y < drawEndY; y++) {
 		for(int x = drawStartX; x < drawEndX; x++) {
-			Uint32 color = weapon[id][256 * (y - drawStartY) + (x - drawStartX)];
+			Uint32 color = weapon[id].frame[frame][256 * (y - drawStartY) + (x - drawStartX)];
 			if(INTtoRGB(color) != ColorRGB(0, 255, 0)) {
 				buffer[y][x] = color;
 			}
@@ -160,23 +168,34 @@ int main() {
 	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
 
 	// load weapons
-	for(int i = 0; i < weaponCount; i++) {
-		weaponLoader[i].resize(128 * 128);
+	shotgun.frameCount = 6;
+	shotgun.frameSmall.resize(shotgun.frameCount);
+	shotgun.frame.resize(shotgun.frameCount);
+	shotgun.frameSequence = {0, 1, 2, 1, 3, 4, 5, 4, 3};
+	shotgun.frameTime = {100, 100, 100, 100, 100, 100, 100, 100, 100};
+	weapon[0] = shotgun;
+
+	for(int i = 0; i < weapon[0].frameCount; i++) {
+		weapon[0].frameSmall[i].resize(128 * 128);
 	}
 
-	loadImage(weaponLoader[0], tw, th, "data/weapons/shotgun.png");
-	loadImage(weaponLoader[1], tw, th, "data/weapons/shotgun1.png");
-	loadImage(weaponLoader[2], tw, th, "data/weapons/shotgun2.png");
+	// load weapon frames
+	loadImage(weapon[0].frameSmall[0], tw, th, "data/weapons/shotgun0.png");
+	loadImage(weapon[0].frameSmall[1], tw, th, "data/weapons/shotgun1.png");
+	loadImage(weapon[0].frameSmall[2], tw, th, "data/weapons/shotgun2.png");
+	loadImage(weapon[0].frameSmall[3], tw, th, "data/weapons/shotgun3.png");
+	loadImage(weapon[0].frameSmall[4], tw, th, "data/weapons/shotgun4.png");
+	loadImage(weapon[0].frameSmall[5], tw, th, "data/weapons/shotgun5.png");
 
 	// scale & store weapon image
-	for(int i = 0; i < weaponCount; i++) {
-		weapon[i].resize(256 * 256);
+	for(int i = 0; i < weapon[0].frameCount; i++) {
+		weapon[0].frame[i].resize(256 * 256);
 		for(int y = 0; y < 128; y++) {
 			for(int x = 0; x < 128; x++) {
-				weapon[i][512 * y + 2 * x] = weaponLoader[i][128 * y + x];
-				weapon[i][512 * y + 2 * x + 1] = weaponLoader[i][128 * y + x];
-				weapon[i][512 * y + 2 * x + 256] = weaponLoader[i][128 * y + x];
-				weapon[i][512 * y + 2 * x + 257] = weaponLoader[i][128 * y + x];
+				weapon[0].frame[i][512 * y + 2 * x] = weapon[0].frameSmall[i][128 * y + x];
+				weapon[0].frame[i][512 * y + 2 * x + 1] = weapon[0].frameSmall[i][128 * y + x];
+				weapon[0].frame[i][512 * y + 2 * x + 256] = weapon[0].frameSmall[i][128 * y + x];
+				weapon[0].frame[i][512 * y + 2 * x + 257] = weapon[0].frameSmall[i][128 * y + x];
 			}
 		}
 	}
@@ -505,20 +524,20 @@ int main() {
 		}
 
 		if(animateWeapon) {
-			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weaponFrameLength) {
+			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weapon[0].frameTime[weaponFrame]) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(weaponFrame < 2 && (time - lastWeaponFrameTime) >= weaponFrameLength) {
+			} else if(weaponFrame < weapon[0].frameSequence.size() - 1 && (time - lastWeaponFrameTime) >= weapon[0].frameTime[weaponFrame]) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(time - lastWeaponFrameTime >= weaponFrameLength){
+			} else if(time - lastWeaponFrameTime >= weapon[0].frameTime[weaponFrame]){
 				weaponFrame = 0;
 				lastWeaponFrameTime = time;
 				animateWeapon = false;
 			}
 		}
 
-		drawWeapon(weaponFrame);
+		drawWeapon(0, weaponFrame);
 
 		drawBuffer(buffer[0]);
 
