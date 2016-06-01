@@ -38,7 +38,7 @@ using namespace QuickCG;
 #define mapHeight 24
 
 #define texCount 4    // number of textures to load
-#define weaponCount 1 // number of weapon sprites
+#define weaponCount 3 // number of weapon sprites
 #define numSprites 3  // number of sprite instances in the map
 
 struct Sprite {
@@ -83,6 +83,10 @@ Sprite sprite[numSprites] = {
 
 Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
 
+// weapon vectors
+std::vector<Uint32> weaponLoader[weaponCount];
+std::vector<Uint32> weapon[weaponCount];
+
 // 1D z-buffer
 double ZBuffer[screenWidth];
 
@@ -113,6 +117,21 @@ void combSort(int* order, double* dist, int amount) {
 	}
 }
 
+void drawWeapon(int id) {
+	int drawStartY = h - 256;
+	int drawEndY = drawStartY + 256;
+	int drawStartX = (w / 2) - 128;
+	int drawEndX = drawStartX + 256;
+	for(int y = drawStartY; y < drawEndY; y++) {
+		for(int x = drawStartX; x < drawEndX; x++) {
+			Uint32 color = weapon[id][256 * (y - drawStartY) + (x - drawStartX)];
+			if(INTtoRGB(color) != ColorRGB(0, 255, 0)) {
+				buffer[y][x] = color;
+			}
+		}
+	}
+}
+
 int main() {
 	double posX = 22, posY = 22;   // x and y start position
 	double dirX = -1, dirY = 0;    // initial direction vector
@@ -120,6 +139,11 @@ int main() {
 
 	double time = 0;    // time of current frame
 	double oldTime = 0; // time of previous frame
+
+	// weapon animation
+	bool animateWeapon = false;
+	double lastWeaponFrameTime = 0;
+	int weaponFrame = 0;
 
 	// texture vector
 	std::vector<Uint32> texture[texCount];
@@ -135,15 +159,15 @@ int main() {
 	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
 
 	// load weapons
-	std::vector<Uint32> weaponLoader[weaponCount];
 	for(int i = 0; i < weaponCount; i++) {
 		weaponLoader[i].resize(128 * 128);
 	}
 
 	loadImage(weaponLoader[0], tw, th, "data/weapons/shotgun.png");
+	loadImage(weaponLoader[1], tw, th, "data/weapons/shotgun1.png");
+	loadImage(weaponLoader[2], tw, th, "data/weapons/shotgun2.png");
 
-	// weapon vector
-	std::vector<Uint32> weapon[weaponCount];
+	// scale & store weapon image
 	for(int i = 0; i < weaponCount; i++) {
 		weapon[i].resize(256 * 256);
 		for(int y = 0; y < 128; y++) {
@@ -400,37 +424,10 @@ int main() {
 			}
 		}
 
-		// draw weapon
-		int drawStartY = h - 256;
-		int drawEndY = drawStartY + 256;
-		int drawStartX = (w / 2) - 128;
-		int drawEndX = drawStartX + 256;
-		for(int y = drawStartY; y < drawEndY; y++) {
-			for(int x = drawStartX; x < drawEndX; x++) {
-				Uint32 color = weapon[0][256 * (y - drawStartY) + (x - drawStartX)];
-				if(INTtoRGB(color) != ColorRGB(0, 255, 0)) {
-					buffer[y][x] = color;
-				}
-			}
-		}
-
-		drawBuffer(buffer[0]);
-
-		// clear the buffer
-		for(int x = 0; x < w; x++) {
-			for(int y = 0; y < h; y++) {
-				buffer[y][x] = 0;
-			}
-		}
-
 		// timing for input and FPS counter
 		oldTime = time;
 		time = getTicks();
 		double frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
-
-		printString(std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black); // FPS counter
-
-		redraw();
 
 		// speed modifiers
 		double moveSpeedMultiplier = 5.0; // squares/second
@@ -480,8 +477,6 @@ int main() {
 		posX += deltaPosX * moveSpeed;
 		posY += deltaPosY * moveSpeed;
 
-		redraw();
-
 		// rotate to the right
 		if (keyDown(SDLK_PERIOD)) {
 			// both camera direction and camera plane must be rotated
@@ -503,5 +498,38 @@ int main() {
 			planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
 			planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
 		}
+
+		if (keyDown(SDLK_SPACE)) {
+			animateWeapon = true;
+		}
+
+		if(animateWeapon) {
+			if(weaponFrame == 0) {
+				weaponFrame++;
+				lastWeaponFrameTime = time;
+			} else if(weaponFrame < 2 && (time - lastWeaponFrameTime) >= 100) {
+				weaponFrame++;
+				lastWeaponFrameTime = time;
+			} else if(time - lastWeaponFrameTime >= 100){
+				weaponFrame = 0;
+				animateWeapon = false;
+			}
+		}
+
+		drawWeapon(weaponFrame);
+
+		drawBuffer(buffer[0]);
+
+		// clear the buffer
+		for(int x = 0; x < w; x++) {
+			for(int y = 0; y < h; y++) {
+				buffer[y][x] = 0;
+			}
+		}
+
+		// FPS counter
+		printString(std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black);
+
+		redraw();
 	}
 }
