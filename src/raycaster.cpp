@@ -158,7 +158,7 @@ int main() {
 	double oldTime = 0; // time of previous frame
 
 	// weapon animation
-	int equippedWeapon = 1;
+	int equippedWeapon = 0;
 	bool animateWeapon = false;
 	double lastWeaponFrameTime = 0;
 	int weaponFrame = 0;
@@ -595,6 +595,12 @@ int main() {
 
 		if (keyDown(SDLK_SPACE)) {
 			animateWeapon = true;
+		}
+
+		if (keyDown(SDLK_1) && !animateWeapon) {
+			equippedWeapon = 0;
+		} else if (keyDown(SDLK_2) && !animateWeapon) {
+			equippedWeapon = 1;
 		}
 
 		if(animateWeapon) {
