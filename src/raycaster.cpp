@@ -31,7 +31,7 @@ using namespace QuickCG;
 
 #define screenWidth 1024
 #define screenHeight 768
-#define texCount 2
+#define texCount 3
 #define texWidth 128
 #define texHeight 128
 #define mapWidth 24
@@ -86,6 +86,7 @@ int main() {
 	unsigned long tw, th;
 	loadImage(texture[0], tw, th, "data/textures/bricks.png");
 	loadImage(texture[1], tw, th, "data/textures/tiles.png");
+	loadImage(texture[2], tw, th, "data/textures/ceiling.png");
 
 	// swap x/y since they're used as vertical stripes
 	for(size_t i = 0; i < texCount; i++) {
@@ -202,6 +203,7 @@ int main() {
 			if(side == 0 && rayDirX > 0) texX = texWidth - texX - 1;
 			if(side == 1 && rayDirY < 0) texX = texWidth - texX - 1;
 
+			// draw walls
 			for(int y = wallStart; y < wallEnd; y++) {
 				int d = y * 256 - h * 128 + lineHeight * 128; // 256 and 128 factors to avoid floats
 				int texY = ((d * texHeight) / lineHeight) / 256;
@@ -210,6 +212,50 @@ int main() {
 				// R, G, and B byte each divided by 2 with a shift and binary and
 				if(side == 1) color = (color >> 1) & 8355711;
 				buffer[y][x] = color;
+			}
+
+			// floor casting
+			double floorXWall, floorYWall; // x and y positions of the floor texture pixel at the bottom of the wall
+
+			// 4 different wall directions possible
+			if(side == 0 && rayDirX > 0) {
+				floorXWall = mapX;
+				floorYWall = mapY + wallX;
+			} else if(side == 0 && rayDirX < 0) {
+				floorXWall = mapX + 1.0;
+				floorYWall = mapY + wallX;
+			} else if(side == 1 && rayDirY > 0) {
+				floorXWall = mapX + wallX;
+				floorYWall = mapY;
+			} else {
+				floorXWall = mapX + wallX;
+				floorYWall = mapY + 1.0;
+			}
+
+			double distWall, distPlayer, currentDist;
+
+			distWall = perpWallDist;
+			distPlayer = 0.0;
+
+			if(wallEnd < 0) wallEnd = h; // becomes 0 when the integer overflows
+
+			// draw the floor from wallEnd to the bottom of the screen
+			for(int y = wallEnd + 1; y < h; y++) {
+				currentDist = h / (2.0 * y - h);
+
+				double weight = (currentDist - distPlayer) / (distWall - distPlayer);
+
+				double currentFloorX = weight * floorXWall + (1.0 - weight) * posX;
+				double currentFloorY = weight * floorYWall + (1.0 - weight) * posY;
+
+				int floorTexX, floorTexY;
+				floorTexX = int(currentFloorX * texWidth) % texWidth;
+				floorTexY = int(currentFloorY * texHeight) % texHeight;
+
+				// floor
+				buffer[y][x] = (texture[1][texWidth * floorTexY + floorTexX]);
+				// ceiling (symmetrical)
+				buffer[h - y][x] = texture[2][texWidth * floorTexY + floorTexX];
 			}
 		}
 
