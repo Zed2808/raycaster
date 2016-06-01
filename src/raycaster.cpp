@@ -39,7 +39,7 @@ using namespace QuickCG;
 
 #define texCount 4   // number of textures to load
 #define numSprites 3 // number of sprite instances in the map
-#define numWeapons 2 // number of weapons to load
+#define numWeapons 3 // number of weapons to load
 
 struct Sprite {
 	double x;
@@ -112,21 +112,29 @@ void loadWeapons() {
 		weapon[i] = Weapon();
 	}
 
+	// PISTOL
+	weapon[0].name = "pistol";                      // weapon name
+	weapon[0].frameCount = 4;                       // number of frames to load
+	weapon[0].frameSmallWidth = {66, 112, 82, 70};  // width of frames to load
+	weapon[0].frameSmallHeight = {62, 102, 81, 81}; // height of frames to load
+	weapon[0].frameSequence = {0, 1, 2, 3};         // animation frame sequence
+	weapon[0].frameTime = 100;                      // time each frame lasts in milliseconds
+
 	// SHOTGUN
-	weapon[0].name = "shotgun";                               // weapon name
-	weapon[0].frameCount = 6;                                 // number of frames to load
-	weapon[0].frameSmallWidth = {79, 79, 79, 119, 87, 113};   // width of frames to load
-	weapon[0].frameSmallHeight = {60, 73, 82, 121, 151, 131}; // height of frames to load
-	weapon[0].frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};       // animation frame sequence
-	weapon[0].frameTime = 100;                                // time each frame lasts in milliseconds
+	weapon[1].name = "shotgun";
+	weapon[1].frameCount = 6;
+	weapon[1].frameSmallWidth = {79, 79, 79, 119, 87, 113};
+	weapon[1].frameSmallHeight = {60, 73, 82, 121, 151, 131};
+	weapon[1].frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};
+	weapon[1].frameTime = 100;
 
 	// SUPERSHOTGUN
-	weapon[1].name = "supershotgun";
-	weapon[1].frameCount = 9;
-	weapon[1].frameSmallWidth = {59, 59, 65, 83, 121, 81, 201, 88, 77};
-	weapon[1].frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
-	weapon[1].frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
-	weapon[1].frameTime = 100;
+	weapon[2].name = "supershotgun";
+	weapon[2].frameCount = 9;
+	weapon[2].frameSmallWidth = {59, 59, 65, 83, 121, 81, 201, 88, 77};
+	weapon[2].frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
+	weapon[2].frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
+	weapon[2].frameTime = 100;
 
 	// set size of frame vectors to number of frames to load
 	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
@@ -579,6 +587,8 @@ int main() {
 			equippedWeapon = 0;
 		} else if (keyDown(SDLK_2) && !animateWeapon) {
 			equippedWeapon = 1;
+		} else if (keyDown(SDLK_3) && !animateWeapon) {
+			equippedWeapon = 2;
 		}
 
 		if(animateWeapon) {
