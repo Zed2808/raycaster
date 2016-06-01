@@ -37,9 +37,10 @@ using namespace QuickCG;
 #define mapWidth 24
 #define mapHeight 24
 
-#define texCount 4    // number of textures to load
-#define weaponCount 3 // number of weapon sprites
-#define numSprites 3  // number of sprite instances in the map
+#define texCount 4            // number of textures to load
+#define numSprites 3          // number of sprite instances in the map
+#define weaponCount 3         // number of weapon sprites
+#define weaponFrameLength 100 // length of weapon animation frame in milliseconds
 
 struct Sprite {
 	double x;
@@ -504,14 +505,15 @@ int main() {
 		}
 
 		if(animateWeapon) {
-			if(weaponFrame == 0) {
+			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weaponFrameLength) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(weaponFrame < 2 && (time - lastWeaponFrameTime) >= 100) {
+			} else if(weaponFrame < 2 && (time - lastWeaponFrameTime) >= weaponFrameLength) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(time - lastWeaponFrameTime >= 100){
+			} else if(time - lastWeaponFrameTime >= weaponFrameLength){
 				weaponFrame = 0;
+				lastWeaponFrameTime = time;
 				animateWeapon = false;
 			}
 		}
