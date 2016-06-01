@@ -39,7 +39,7 @@ using namespace QuickCG;
 
 #define texCount 4            // number of textures to load
 #define numSprites 3          // number of sprite instances in the map
-#define numWeapons 1          // number of weapons to load
+#define numWeapons 2          // number of weapons to load
 
 struct Sprite {
 	double x;
@@ -97,6 +97,7 @@ Sprite sprite[numSprites] = {
 // weapons to load
 Weapon weapon[numWeapons];
 Weapon shotgun;
+Weapon supershotgun;
 
 Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
 
@@ -157,6 +158,7 @@ int main() {
 	double oldTime = 0; // time of previous frame
 
 	// weapon animation
+	int equippedWeapon = 1;
 	bool animateWeapon = false;
 	double lastWeaponFrameTime = 0;
 	int weaponFrame = 0;
@@ -198,53 +200,81 @@ int main() {
 	}
 
 	// set frame sequence for weapon animation
-	shotgun.frameSequence = {0, 1, 2, 1, 0, 3, 4, 5, 4, 3};
+	shotgun.frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};
 
 	// time each frame lasts in milliseconds
-	shotgun.frameTime = 75;
+	shotgun.frameTime = 100;
+
+	// configure supershotgun
+	// weapon name
+	supershotgun.name = "supershotgun";
+
+	// number of frames to load
+	supershotgun.frameCount = 9;
+
+	// set size of vectors to number of frames to load
+	supershotgun.frameSmall.resize(supershotgun.frameCount);
+	supershotgun.frame.resize(supershotgun.frameCount);
+
+	// width & height of frames to load
+	supershotgun.frameSmallWidth = {59, 59, 65, 83, 121, 81, 201, 88, 77};
+	supershotgun.frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
+
+	// set width & height of frames to double what they were loaded as
+	supershotgun.frameWidth.resize(supershotgun.frameCount);
+	supershotgun.frameHeight.resize(supershotgun.frameCount);
+	for(int i = 0; i < supershotgun.frameCount; i++) {
+		supershotgun.frameWidth[i] = supershotgun.frameSmallWidth[i] * 2;
+		supershotgun.frameHeight[i] = supershotgun.frameSmallHeight[i] * 2;
+	}
+
+	// set frame sequence for weapon animation
+	supershotgun.frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
+
+	// time each frame lasts in milliseconds
+	supershotgun.frameTime = 100;
 
 	// set first weapon to our new shotgun
 	weapon[0] = shotgun;
+	weapon[1] = supershotgun;
 
 	// set size of frameSmall[i] to size of image to load
-	for(int i = 0; i < weapon[0].frameCount; i++) {
-		weapon[0].frameSmall[i].resize(weapon[0].frameSmallWidth[i] * weapon[0].frameSmallHeight[i]);
+	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
+		for(int frameNum = 0; frameNum < weapon[0].frameCount; frameNum++) {
+			weapon[weaponNum].frameSmall[frameNum].resize(weapon[weaponNum].frameSmallWidth[frameNum] * weapon[weaponNum].frameSmallHeight[frameNum]);
+		}
 	}
 
 	// load weapon frames
-	for(int i = 0; i < weapon[0].frameCount; i++) {
-		loadImage(weapon[0].frameSmall[i], tw, th, "data/weapons/" + weapon[0].name + std::to_string(i) + ".png");
+	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
+		for(int frameNum = 0; frameNum < weapon[weaponNum].frameCount; frameNum++) {
+			loadImage(weapon[weaponNum].frameSmall[frameNum], tw, th, "data/weapons/" + weapon[weaponNum].name + std::to_string(frameNum) + ".png");
+		}
 	}
 
 	// scale & store weapon image
-	for(int i = 0; i < weapon[0].frameCount; i++) {
-		// resize frame to frameWidth * frameHeight
-		weapon[0].frame[i].resize(weapon[0].frameWidth[i] * weapon[0].frameHeight[i]);
+	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
+		for(int frameNum = 0; frameNum < weapon[weaponNum].frameCount; frameNum++) {
+			// resize frame to frameWidth * frameHeight
+			weapon[weaponNum].frame[frameNum].resize(weapon[weaponNum].frameWidth[frameNum] * weapon[weaponNum].frameHeight[frameNum]);
 
-		// iterate through each pixel in the loaded weapon texture
-		for(int y = 0; y < weapon[0].frameSmallHeight[i]; y++) {
-			for(int x = 0; x < weapon[0].frameSmallWidth[i]; x++) {
-				// get pixel color at x/y coord in weapon texture
-				Uint32 color = weapon[0].frameSmall[i][weapon[0].frameSmallWidth[i] * y + x];
+			// iterate through each pixel in the loaded weapon texture
+			for(int y = 0; y < weapon[weaponNum].frameSmallHeight[frameNum]; y++) {
+				for(int x = 0; x < weapon[weaponNum].frameSmallWidth[frameNum]; x++) {
+					// get pixel color at x/y coord in weapon texture
+					Uint32 color = weapon[weaponNum].frameSmall[frameNum][weapon[weaponNum].frameSmallWidth[frameNum] * y + x];
 
-				// enlarge weapon by setting color of 4x4 square to color
-				weapon[0].frame[i][weapon[0].frameWidth[i] * y * 2 + 2 * x] = color;
-				weapon[0].frame[i][weapon[0].frameWidth[i] * y * 2 + 2 * x + 1] = color;
-				weapon[0].frame[i][weapon[0].frameWidth[i] * y * 2 + 2 * x + weapon[0].frameWidth[i]] = color;
-				weapon[0].frame[i][weapon[0].frameWidth[i] * y * 2 + 2 * x + weapon[0].frameWidth[i] + 1] = color;
+					// enlarge weapon by setting color of 4x4 square to color
+					weapon[weaponNum].frame[frameNum][weapon[weaponNum].frameWidth[frameNum] * y * 2 + 2 * x] = color;
+					weapon[weaponNum].frame[frameNum][weapon[weaponNum].frameWidth[frameNum] * y * 2 + 2 * x + 1] = color;
+					weapon[weaponNum].frame[frameNum][weapon[weaponNum].frameWidth[frameNum] * y * 2 + 2 * x + weapon[weaponNum].frameWidth[frameNum]] = color;
+					weapon[weaponNum].frame[frameNum][weapon[weaponNum].frameWidth[frameNum] * y * 2 + 2 * x + weapon[weaponNum].frameWidth[frameNum] + 1] = color;
+				}
 			}
 		}
 	}
 
-	// weapon[0].frame[5].resize(weapon[0].frameWidth[5] * weapon[0].frameHeight[5]);
-	// for(int y = 0; y < weapon[0].frameSmallHeight[5]; y++) {
-	// 	for(int x = 0; x < weapon[0].frameSmallWidth[5]; x++) {
-	// 		Uint32 color = weapon[0].frameSmall[5][weapon[0].frameSmallWidth[5] * y + x];
-	// 		weapon[0].frame[5][weapon[0].frameWidth[5] * y * 2 + 2 * x] = color;
-	// 	}
-	// }
-
-	// swap x/y since they're used as vertical stripes
+	// swap texture x/y since they're used as vertical stripes
 	for(size_t i = 0; i < texCount; i++) {
 		for(size_t x = 0; x < texHeight; x++) {
 			for(size_t y = 0; y < x; y++) {
@@ -568,20 +598,20 @@ int main() {
 		}
 
 		if(animateWeapon) {
-			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weapon[0].frameTime) {
+			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weapon[equippedWeapon].frameTime) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(weaponFrame < weapon[0].frameSequence.size() - 1 && (time - lastWeaponFrameTime) >= weapon[0].frameTime) {
+			} else if(weaponFrame < weapon[equippedWeapon].frameSequence.size() - 1 && (time - lastWeaponFrameTime) >= weapon[equippedWeapon].frameTime) {
 				weaponFrame++;
 				lastWeaponFrameTime = time;
-			} else if(time - lastWeaponFrameTime >= weapon[0].frameTime){
+			} else if(time - lastWeaponFrameTime >= weapon[equippedWeapon].frameTime) {
 				weaponFrame = 0;
 				lastWeaponFrameTime = time;
 				animateWeapon = false;
 			}
 		}
 
-		drawWeapon(0, weaponFrame);
+		drawWeapon(equippedWeapon, weaponFrame);
 
 		drawBuffer(buffer[0]);
 
