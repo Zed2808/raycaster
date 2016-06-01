@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace QuickCG;
 
 #define fullscreen 0
-#define screenWidth 640
+#define screenWidth 854
 #define screenHeight 480
 #define texWidth 128
 #define texHeight 128
@@ -114,9 +114,9 @@ void combSort(int* order, double* dist, int amount) {
 }
 
 int main() {
-	double posX = 22, posY = 22;      // x and y start position
-	double dirX = -1, dirY = 0;       // initial direction vector
-	double planeX = 0, planeY = 0.66; // the 2d raycaster version of camera plane
+	double posX = 22, posY = 22;   // x and y start position
+	double dirX = -1, dirY = 0;    // initial direction vector
+	double planeX = 0, planeY = 1; // the 2d raycaster version of camera plane
 
 	double time = 0;    // time of current frame
 	double oldTime = 0; // time of previous frame
@@ -440,20 +440,50 @@ int main() {
 
 		readKeys();
 
+		double deltaPosX = 0;
+		double deltaPosY = 0;
+
 		// move forward if no wall in front of you
-		if (keyDown(SDLK_UP)) {
-			if(worldMap[int(posX + dirX * moveSpeed)][int(posY)] == false) posX += dirX * moveSpeed;
-			if(worldMap[int(posX)][int(posY + dirY * moveSpeed)] == false) posY += dirY * moveSpeed;
+		if (keyDown(SDLK_w)) {
+			if(worldMap[int(posX + dirX * moveSpeed)][int(posY)] == false) deltaPosX += dirX;
+			if(worldMap[int(posX)][int(posY + dirY * moveSpeed)] == false) deltaPosY += dirY;
 		}
 		
 		// move backwards if no wall behind you
-		if (keyDown(SDLK_DOWN)) {
-			if(worldMap[int(posX - dirX * moveSpeed)][int(posY)] == false) posX -= dirX * moveSpeed;
-			if(worldMap[int(posX)][int(posY - dirY * moveSpeed)] == false) posY -= dirY * moveSpeed;
+		if (keyDown(SDLK_s)) {
+			if(worldMap[int(posX - dirX * moveSpeed)][int(posY)] == false) deltaPosX -= dirX;
+			if(worldMap[int(posX)][int(posY - dirY * moveSpeed)] == false) deltaPosY -= dirY;
+		}
+
+		// move left if no wall to the left
+		if (keyDown(SDLK_a)) {
+			if(worldMap[int(posX - planeX * moveSpeed)][int(posY)] == false) deltaPosX -= planeX;
+			if(worldMap[int(posX)][int(posY - planeY * moveSpeed)] == false) deltaPosY -= planeY;
 		}
 		
+		// strafe right if no wall to the right
+		if (keyDown(SDLK_d)) {
+			if(worldMap[int(posX + planeX * moveSpeed)][int(posY)] == false) deltaPosX += planeX;
+			if(worldMap[int(posX)][int(posY + planeY * moveSpeed)] == false) deltaPosY += planeY;
+		}
+
+		// pythagorean theorem to get actual vector
+		double diagonal = sqrt(pow(deltaPosX, 2) + pow(deltaPosY, 2));
+
+		// normalize vector to not go above 1.0
+		if(diagonal > 1) {
+			deltaPosX /= diagonal;
+			deltaPosY /= diagonal;
+		}
+
+		// change x & y position by position delta modified by move speed
+		posX += deltaPosX * moveSpeed;
+		posY += deltaPosY * moveSpeed;
+
+		redraw();
+
 		// rotate to the right
-		if (keyDown(SDLK_RIGHT)) {
+		if (keyDown(SDLK_PERIOD)) {
 			// both camera direction and camera plane must be rotated
 			double oldDirX = dirX;
 			dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
@@ -464,7 +494,7 @@ int main() {
 		}
 		
 		// rotate to the left
-		if (keyDown(SDLK_LEFT)) {
+		if (keyDown(SDLK_COMMA)) {
 			// both camera direction and camera plane must be rotated
 			double oldDirX = dirX;
 			dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
