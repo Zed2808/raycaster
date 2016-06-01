@@ -48,6 +48,7 @@ struct Sprite {
 };
 
 struct Weapon {
+	std::string name;
 	int frameCount;
 	std::vector<std::vector<Uint32>> frameSmall;
 	std::vector<std::vector<Uint32>> frame;
@@ -168,6 +169,7 @@ int main() {
 	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
 
 	// load weapons
+	shotgun.name = "shotgun";
 	shotgun.frameCount = 6;
 	shotgun.frameSmall.resize(shotgun.frameCount);
 	shotgun.frame.resize(shotgun.frameCount);
@@ -180,12 +182,9 @@ int main() {
 	}
 
 	// load weapon frames
-	loadImage(weapon[0].frameSmall[0], tw, th, "data/weapons/shotgun0.png");
-	loadImage(weapon[0].frameSmall[1], tw, th, "data/weapons/shotgun1.png");
-	loadImage(weapon[0].frameSmall[2], tw, th, "data/weapons/shotgun2.png");
-	loadImage(weapon[0].frameSmall[3], tw, th, "data/weapons/shotgun3.png");
-	loadImage(weapon[0].frameSmall[4], tw, th, "data/weapons/shotgun4.png");
-	loadImage(weapon[0].frameSmall[5], tw, th, "data/weapons/shotgun5.png");
+	for(int i = 0; i < weapon[0].frameCount; i++) {
+		loadImage(weapon[0].frameSmall[i], tw, th, "data/weapons/" + weapon[0].name + std::to_string(i) + ".png");
+	}
 
 	// scale & store weapon image
 	for(int i = 0; i < weapon[0].frameCount; i++) {
