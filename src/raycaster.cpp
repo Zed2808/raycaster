@@ -58,6 +58,7 @@ struct Weapon {
 	std::vector<std::vector<Uint32>> frame;
 	std::vector<int> frameSequence;
 	int frameTime;
+	Mix_Chunk* sfxFire;
 };
 
 int worldMap[mapWidth][mapHeight] = {
@@ -145,12 +146,13 @@ void loadWeapons() {
 	}
 
 	// PISTOL
-	weapon[0].name = "pistol";                      // weapon name
-	weapon[0].frameCount = 4;                       // number of frames to load
-	weapon[0].frameSmallWidth = {66, 112, 82, 70};  // width of frames to load
-	weapon[0].frameSmallHeight = {62, 102, 81, 81}; // height of frames to load
-	weapon[0].frameSequence = {0, 1, 2, 3};         // animation frame sequence
-	weapon[0].frameTime = 100;                      // time each frame lasts in milliseconds
+	weapon[0].name = "pistol";                                         // weapon name
+	weapon[0].frameCount = 4;                                          // number of frames to load
+	weapon[0].frameSmallWidth = {66, 112, 82, 70};                     // width of frames to load
+	weapon[0].frameSmallHeight = {62, 102, 81, 81};                    // height of frames to load
+	weapon[0].frameSequence = {0, 1, 2, 3};                            // animation frame sequence
+	weapon[0].frameTime = 100;                                         // time each frame lasts in milliseconds
+	weapon[0].sfxFire = Mix_LoadWAV("data/sounds/weapons/pistol.wav"); // sound played on firing
 
 	// SHOTGUN
 	weapon[1].name = "shotgun";
@@ -159,6 +161,7 @@ void loadWeapons() {
 	weapon[1].frameSmallHeight = {60, 73, 82, 121, 151, 131};
 	weapon[1].frameSequence = {0, 1, 2, 3, 4, 5, 4, 3};
 	weapon[1].frameTime = 100;
+	weapon[1].sfxFire = Mix_LoadWAV("data/sounds/weapons/shotgun.wav");
 
 	// SUPERSHOTGUN
 	weapon[2].name = "supershotgun";
@@ -167,6 +170,7 @@ void loadWeapons() {
 	weapon[2].frameSmallHeight = {55, 69, 78, 103, 130, 80, 63, 51, 85};
 	weapon[2].frameSequence = {0, 1, 2, 3, 4, 5, 6, 7, 5, 8};
 	weapon[2].frameTime = 100;
+	weapon[2].sfxFire = Mix_LoadWAV("data/sounds/weapons/supershotgun.wav");
 
 	// set size of frame vectors to number of frames to load
 	for(int weaponNum = 0; weaponNum < numWeapons; weaponNum++) {
@@ -503,6 +507,12 @@ void drawWeapon(int id, int seq) {
 }
 
 int main() {
+	// initialize the window, renderer, and screen texture
+	initVideo(screenWidth, screenHeight, fullscreen, "Raycaster");
+
+	// initialize audio
+	initAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+
 	// timing variables
 	unsigned int time = 0;         // time of current frame
 	unsigned int oldTime = 0;      // time of previous frame
@@ -520,9 +530,6 @@ int main() {
 
 	// load weapon textures
 	loadWeapons();
-
-	// initialize the window, renderer, and screen texture
-	initScreen(screenWidth, screenHeight, fullscreen, "Raycaster");
 
 	// close if player presses escape
 	while(!done()) {
@@ -543,12 +550,12 @@ int main() {
 		double moveSpeed = frameTime * moveSpeedMultiplier;
 		double rotSpeed = frameTime * rotSpeedMultiplier;
 
-		// read keys currently held down
-		readKeys();
-
 		// amount to move player in x/y directions (0.0 - 1.0)
 		double deltaPosX = 0;
 		double deltaPosY = 0;
+
+		// read keys currently held down
+		readKeys();
 
 		// move forward if no wall in front of you
 		if (keyDown(SDL_SCANCODE_W)) {
@@ -610,8 +617,9 @@ int main() {
 		}
 
 		// fire currently equipped weapon
-		if (keyDown(SDL_SCANCODE_SPACE)) {
+		if (keyDown(SDL_SCANCODE_SPACE) && !animateWeapon) {
 			animateWeapon = true;
+			Mix_PlayChannel(-1, weapon[equippedWeapon].sfxFire, 0);
 		}
 
 		// equip weapon based on number key pressed, as long as current weapon isn't being animateed

@@ -1,6 +1,6 @@
 CC = g++
 CCFLAGS = -O3 -Wall -Wextra -pedantic -std=c++0x
-LIBS = -lSDL2
+LIBS = -lSDL2 -lSDL2_mixer
 
 SRC = ./src/
 OBJ = ./obj/

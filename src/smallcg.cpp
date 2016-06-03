@@ -63,11 +63,11 @@ bool keyDown(int scancode) {
 ////////////////////////////////////////////////////////////////////////////////
 // BASIC SCREEN FUNCTIONS //////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void initScreen(int width, int height, bool fullscreen, const std::string& title) {
+void initVideo(int width, int height, bool fullscreen, const std::string& title) {
 	w = width;
 	h = height;
 
-	if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Unable to init SDL: %s\n", SDL_GetError());
 		SDL_Quit();
 		std::exit(1);
@@ -856,6 +856,19 @@ void decodeBase64(std::vector<unsigned char>& out, const std::string& in) {
 				out.push_back(octet[i]);
 			}
 		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AUDIO FUNCTIONS /////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+void initAudio(int frequency, Uint16 format, int channels, int chunksize) {
+	if(SDL_Init(SDL_INIT_AUDIO) < 0) {
+		printf("Could not initialize audio: %s\n", SDL_GetError());
+	}
+
+	if(Mix_OpenAudio(frequency, format, channels, chunksize) < 0) {
+		printf("SDL_mixer could not initialize: %s\n", Mix_GetError());
 	}
 }
 
