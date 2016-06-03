@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "smallcg.h"
 using namespace SmallCG;
 
-#define fullscreen 0
 #define screenWidth 854
 #define screenHeight 480
 #define texWidth 128
@@ -40,6 +39,8 @@ using namespace SmallCG;
 #define texCount 4   // number of textures to load
 #define numSprites 3 // number of sprite instances in the map
 #define numWeapons 3 // number of weapons to load
+
+int fullscreen = 0;
 
 struct Sprite {
 	double x;
@@ -506,7 +507,14 @@ void drawWeapon(int id, int seq) {
 	}
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+	// parse command line arguments
+	if(argc > 1) {
+		if(std::string(argv[1]) == "--fullscreen") {
+			fullscreen = 1;
+		}
+	}
+
 	// initialize the window, renderer, and screen texture
 	initVideo(screenWidth, screenHeight, fullscreen, "Raycaster");
 
