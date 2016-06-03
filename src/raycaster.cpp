@@ -26,8 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <iostream>
 
-#include "quickcg.h"
-using namespace QuickCG;
+#include "smallcg.h"
+using namespace SmallCG;
 
 #define fullscreen 0
 #define screenWidth 854
@@ -269,7 +269,7 @@ int main() {
 
 	loadWeapons();
 
-	screen(screenWidth, screenHeight, fullscreen, "Raycaster");
+	initScreen(screenWidth, screenHeight, fullscreen, "Raycaster");
 
 	while(!done()) {
 		// for each pixel in the width of the screen
@@ -506,7 +506,7 @@ int main() {
 
 		// timing for input and FPS counter
 		oldTime = time;
-		time = getTicks();
+		time = SDL_GetTicks();
 		double frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
 
 		// speed modifiers
@@ -521,25 +521,25 @@ int main() {
 		double deltaPosY = 0;
 
 		// move forward if no wall in front of you
-		if (keyDown(SDLK_w)) {
+		if (keyDown(SDL_SCANCODE_W)) {
 			if(worldMap[int(posX + dirX * moveSpeed)][int(posY)] == false) deltaPosX += dirX;
 			if(worldMap[int(posX)][int(posY + dirY * moveSpeed)] == false) deltaPosY += dirY;
 		}
 		
 		// move backwards if no wall behind you
-		if (keyDown(SDLK_s)) {
+		if (keyDown(SDL_SCANCODE_S)) {
 			if(worldMap[int(posX - dirX * moveSpeed)][int(posY)] == false) deltaPosX -= dirX;
 			if(worldMap[int(posX)][int(posY - dirY * moveSpeed)] == false) deltaPosY -= dirY;
 		}
 
 		// move left if no wall to the left
-		if (keyDown(SDLK_a)) {
+		if (keyDown(SDL_SCANCODE_A)) {
 			if(worldMap[int(posX - planeX * moveSpeed)][int(posY)] == false) deltaPosX -= planeX;
 			if(worldMap[int(posX)][int(posY - planeY * moveSpeed)] == false) deltaPosY -= planeY;
 		}
 		
 		// strafe right if no wall to the right
-		if (keyDown(SDLK_d)) {
+		if (keyDown(SDL_SCANCODE_D)) {
 			if(worldMap[int(posX + planeX * moveSpeed)][int(posY)] == false) deltaPosX += planeX;
 			if(worldMap[int(posX)][int(posY + planeY * moveSpeed)] == false) deltaPosY += planeY;
 		}
@@ -558,7 +558,7 @@ int main() {
 		posY += deltaPosY * moveSpeed;
 
 		// rotate to the right
-		if (keyDown(SDLK_PERIOD)) {
+		if (keyDown(SDL_SCANCODE_PERIOD)) {
 			// both camera direction and camera plane must be rotated
 			double oldDirX = dirX;
 			dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
@@ -569,7 +569,7 @@ int main() {
 		}
 		
 		// rotate to the left
-		if (keyDown(SDLK_COMMA)) {
+		if (keyDown(SDL_SCANCODE_COMMA)) {
 			// both camera direction and camera plane must be rotated
 			double oldDirX = dirX;
 			dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
@@ -579,15 +579,15 @@ int main() {
 			planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
 		}
 
-		if (keyDown(SDLK_SPACE)) {
+		if (keyDown(SDL_SCANCODE_SPACE)) {
 			animateWeapon = true;
 		}
 
-		if (keyDown(SDLK_1) && !animateWeapon) {
+		if (keyDown(SDL_SCANCODE_1) && !animateWeapon) {
 			equippedWeapon = 0;
-		} else if (keyDown(SDLK_2) && !animateWeapon) {
+		} else if (keyDown(SDL_SCANCODE_2) && !animateWeapon) {
 			equippedWeapon = 1;
-		} else if (keyDown(SDLK_3) && !animateWeapon) {
+		} else if (keyDown(SDL_SCANCODE_3) && !animateWeapon) {
 			equippedWeapon = 2;
 		}
 
@@ -607,18 +607,11 @@ int main() {
 
 		drawWeapon(equippedWeapon, weaponFrame);
 
+		// FPS counter
+		printString(buffer[0], std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black);
+
 		drawBuffer(buffer[0]);
 
-		// clear the buffer
-		for(int x = 0; x < w; x++) {
-			for(int y = 0; y < h; y++) {
-				buffer[y][x] = 0;
-			}
-		}
-
-		// FPS counter
-		printString(std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black);
-
-		redraw();
+		present();
 	}
 }
