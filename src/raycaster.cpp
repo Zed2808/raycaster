@@ -217,14 +217,18 @@ void drawWeapon(int id, int seq) {
 	// take the sequence in the animation and convert to the actual frame to draw
 	int frame = weapon[id].frameSequence[seq];
 
+	// draw weapon centered at the bottom of the screen
 	int drawStartY = h - weapon[id].frameHeight[frame];
 	int drawEndY = drawStartY + weapon[id].frameHeight[frame];
 	int drawStartX = (w / 2) - (weapon[id].frameWidth[frame] / 2);
 	int drawEndX = drawStartX + weapon[id].frameWidth[frame];
+
 	for(int y = drawStartY; y < drawEndY; y++) {
 		for(int x = drawStartX; x < drawEndX; x++) {
+			// get color of texture pixel
 			Uint32 color = weapon[id].frame[frame][weapon[id].frameWidth[frame] * (y - drawStartY) + (x - drawStartX)];
-			if(INTtoRGB(color) != ColorRGB(0, 255, 255)) {
+			if(INTtoRGB(color) != ColorRGB(0, 255, 255)) { // #00FFFF (cyan) becomes transparent
+				// set buffer pixel to color of texture pixel
 				buffer[y][x] = color;
 			}
 		}
@@ -269,8 +273,10 @@ int main() {
 		}
 	}
 
+	// load weapon textures
 	loadWeapons();
 
+	// initialize the window, renderer, and screen texture
 	initScreen(screenWidth, screenHeight, fullscreen, "Raycaster");
 
 	while(!done()) {
@@ -517,8 +523,10 @@ int main() {
 		double moveSpeed = frameTime * moveSpeedMultiplier;
 		double rotSpeed = frameTime * rotSpeedMultiplier;
 
+		// read keys currently held down
 		readKeys();
 
+		// amount to move player in x/y directions (0.0 - 1.0)
 		double deltaPosX = 0;
 		double deltaPosY = 0;
 
@@ -581,10 +589,12 @@ int main() {
 			planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
 		}
 
+		// fire currently equipped weapon
 		if (keyDown(SDL_SCANCODE_SPACE)) {
 			animateWeapon = true;
 		}
 
+		// equip weapon based on number key pressed, as long as current weapon isn't being animateed
 		if (keyDown(SDL_SCANCODE_1) && !animateWeapon) {
 			equippedWeapon = 0;
 		} else if (keyDown(SDL_SCANCODE_2) && !animateWeapon) {
@@ -593,6 +603,7 @@ int main() {
 			equippedWeapon = 2;
 		}
 
+		// choose which frame of weapon animation to draw
 		if(animateWeapon) {
 			if(weaponFrame == 0 && (time - lastWeaponFrameTime) >= weapon[equippedWeapon].frameTime) {
 				weaponFrame++;
@@ -607,6 +618,7 @@ int main() {
 			}
 		}
 
+		// draw weapon frame
 		drawWeapon(equippedWeapon, weaponFrame);
 
 		// update FPS counter every second
@@ -618,8 +630,10 @@ int main() {
 		// but still print FPS counter every frame
 		printString(buffer[0], std::to_string(fps) + " FPS", 0, 0, RGB_White, true, RGB_Black);
 
+		// draw the buffer to the screen texture
 		drawBuffer(buffer[0]);
 
+		// copy screen texture to the renderer & render
 		present();
 	}
 }
