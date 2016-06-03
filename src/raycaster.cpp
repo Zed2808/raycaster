@@ -236,8 +236,10 @@ int main() {
 	double dirX = -1, dirY = 0;    // initial direction vector
 	double planeX = 0, planeY = 1; // the 2d raycaster version of camera plane
 
-	double time = 0;    // time of current frame
-	double oldTime = 0; // time of previous frame
+	unsigned int time = 0;         // time of current frame
+	unsigned int oldTime = 0;      // time of previous frame
+	unsigned int fpsLastShown = 0; // time fps counter was last updated
+	unsigned int fps = 0;          // frames per second
 
 	// weapon animation
 	int equippedWeapon = 0;
@@ -607,8 +609,14 @@ int main() {
 
 		drawWeapon(equippedWeapon, weaponFrame);
 
-		// FPS counter
-		printString(buffer[0], std::to_string(int(1.0/frameTime)) + " FPS", 0, 0, RGB_White, true, RGB_Black);
+		// update FPS counter every second
+		if(time - fpsLastShown >= 1000) {
+			fps = int(1.0 / frameTime);
+			fpsLastShown = time;
+		}
+
+		// but still print FPS counter every frame
+		printString(buffer[0], std::to_string(fps) + " FPS", 0, 0, RGB_White, true, RGB_Black);
 
 		drawBuffer(buffer[0]);
 
