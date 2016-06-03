@@ -544,18 +544,16 @@ int main() {
 		time = SDL_GetTicks();
 		double frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
 
-		// speed modifiers
+		// movement & rotation modifiers
 		double moveSpeedMultiplier = 5.0; // squares/second
 		double rotSpeedMultiplier = 3.0;  // radians/second
 		double moveSpeed = frameTime * moveSpeedMultiplier;
 		double rotSpeed = frameTime * rotSpeedMultiplier;
+		double mouseSens = 0.05;
 
 		// amount to move player in x/y directions (0.0 - 1.0)
 		double deltaPosX = 0;
 		double deltaPosY = 0;
-
-		// read keys currently held down
-		readKeys();
 
 		// move forward if no wall in front of you
 		if (keyDown(SDL_SCANCODE_W)) {
@@ -594,6 +592,23 @@ int main() {
 		posX += deltaPosX * moveSpeed;
 		posY += deltaPosY * moveSpeed;
 
+		// mouse movement along x axis
+		int dx = 0;
+
+		// get mouse movement along x axis
+		SDL_GetRelativeMouseState(&dx, NULL);
+
+		// set rotation based on dx, rotSpeed, and mouseSens
+		double mouseRot = -dx * rotSpeed * mouseSens;
+
+		// rotate based on mouse movement
+		double oldDirX = dirX;
+		dirX = dirX * cos(mouseRot) - dirY * sin(mouseRot);
+		dirY = oldDirX * sin(mouseRot) + dirY * cos(mouseRot);
+		double oldPlaneX = planeX;
+		planeX = planeX * cos(mouseRot) - planeY * sin(mouseRot);
+		planeY = oldPlaneX * sin(mouseRot) + planeY * cos(mouseRot);
+
 		// rotate to the right
 		if (keyDown(SDL_SCANCODE_PERIOD)) {
 			// both camera direction and camera plane must be rotated
@@ -617,7 +632,7 @@ int main() {
 		}
 
 		// fire currently equipped weapon
-		if (keyDown(SDL_SCANCODE_SPACE) && !animateWeapon) {
+		if ((keyDown(SDL_SCANCODE_SPACE) || mouseDown(SDL_BUTTON_LEFT)) && !animateWeapon) {
 			animateWeapon = true;
 			Mix_PlayChannel(-1, weapon[equippedWeapon].sfxFire, 0);
 		}

@@ -54,10 +54,14 @@ const Uint8* inkeys;
 SDL_Event event = {0};
 
 ////////////////////////////////////////////////////////////////////////////////
-// KEYBOARD FUNCTIONS //////////////////////////////////////////////////////////
+// KEYBOARD & MOUSE FUNCTIONS //////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool keyDown(int scancode) {
 	return (inkeys[scancode] != 0);
+}
+
+bool mouseDown(int button) {
+	return SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -99,6 +103,8 @@ void initVideo(int width, int height, bool fullscreen, const std::string& title)
 							   SDL_PIXELFORMAT_ARGB8888,
 							   SDL_TEXTUREACCESS_STREAMING,
 							   width, height);
+
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 void present() {
@@ -127,7 +133,6 @@ bool done() {
 }
 
 void readKeys() {
-	SDL_PollEvent(&event);
 	inkeys = SDL_GetKeyboardState(NULL);
 }
 
