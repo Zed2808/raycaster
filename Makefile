@@ -1,16 +1,24 @@
 CC = g++
 CCFLAGS = -O3 -Wall -Wextra -pedantic -std=c++0x
-LIBS = -lSDL2 -lSDL2_mixer
+LIBS = -lSDL2_mixer
+
+ifeq ($(OS),Windows_NT)
+	LIBS += -lmingw32 -lSDL2main -lSDL2
+	EXECUTABLE += raycaster.exe
+else
+	LIBS += -lSDL2
+	EXECUTABLE += raycaster
+endif
 
 SRC = ./src/
 OBJ = ./obj/
 
-all: raycaster
+all: $(EXECUTABLE)
 
 debug: CCFLAGS += -g
-debug: raycaster
+debug: $(EXECUTABLE)
 
-raycaster: $(OBJ)smallcg.o $(OBJ)raycaster.o
+$(EXECUTABLE): $(OBJ)smallcg.o $(OBJ)raycaster.o
 	$(CC) $(CCFLAGS) -o raycaster $(OBJ)smallcg.o $(OBJ)raycaster.o $(LIBS)
 
 $(OBJ)smallcg.o: $(SRC)smallcg.cpp $(SRC)smallcg.h
@@ -19,7 +27,7 @@ $(OBJ)smallcg.o: $(SRC)smallcg.cpp $(SRC)smallcg.h
 $(OBJ)raycaster.o: $(SRC)raycaster.cpp
 	$(CC) $(CCFLAGS) -c -o $(OBJ)raycaster.o $(SRC)raycaster.cpp
 
-debug: raycaster
+debug: $(EXECUTABLE)
 
 clean:
-	rm -rf $(OBJ)*.o raycaster
+	rm -rf $(OBJ)*.o $(EXECUTABLE)
