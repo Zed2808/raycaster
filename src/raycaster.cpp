@@ -94,6 +94,9 @@ Sprite sprite[numSprites] = {
 	{21.5, 15.5,  3}
 };
 
+// loaded textures
+std::vector<Uint32> texture[texCount];
+
 // loaded weapons
 Weapon weapon[numWeapons];
 
@@ -105,6 +108,29 @@ double ZBuffer[screenWidth];
 // arrays used to sort the sprites
 int spriteOrder[numSprites];
 double spriteDistance[numSprites];
+
+void loadTextures() {
+	// set each element of texture vector to the size of the textures to load
+	for(int i = 0; i < texCount; i++) {
+		texture[i].resize(texWidth * texHeight);
+	}
+
+	// load textures & sprites
+	unsigned long tw, th;
+	loadImage(texture[0], tw, th, "data/textures/bricks.png");
+	loadImage(texture[1], tw, th, "data/textures/tiles.png");
+	loadImage(texture[2], tw, th, "data/textures/ceiling.png");
+	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
+
+	// swap texture x/y since they're used as vertical stripes
+	for(size_t i = 0; i < texCount; i++) {
+		for(size_t x = 0; x < texHeight; x++) {
+			for(size_t y = 0; y < x; y++) {
+				std::swap(texture[i][texHeight * y + x], texture[i][texHeight * x + y]);
+			}
+		}
+	}
+}
 
 void loadWeapons() {
 	// initialize weapons
@@ -251,27 +277,8 @@ int main() {
 	double lastWeaponFrameTime = 0;
 	int weaponFrame = 0;
 
-	// texture vector
-	std::vector<Uint32> texture[texCount];
-	for(int i = 0; i < texCount; i++) {
-		texture[i].resize(texWidth * texHeight);
-	}
-
-	// load textures & sprites
-	unsigned long tw, th;
-	loadImage(texture[0], tw, th, "data/textures/bricks.png");
-	loadImage(texture[1], tw, th, "data/textures/tiles.png");
-	loadImage(texture[2], tw, th, "data/textures/ceiling.png");
-	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
-
-	// swap texture x/y since they're used as vertical stripes
-	for(size_t i = 0; i < texCount; i++) {
-		for(size_t x = 0; x < texHeight; x++) {
-			for(size_t y = 0; y < x; y++) {
-				std::swap(texture[i][texHeight * y + x], texture[i][texHeight * x + y]);
-			}
-		}
-	}
+	// load environment textures & sprites
+	loadTextures();
 
 	// load weapon textures
 	loadWeapons();
