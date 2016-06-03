@@ -100,6 +100,12 @@ std::vector<Uint32> texture[texCount];
 // loaded weapons
 Weapon weapon[numWeapons];
 
+// player position variables
+double posX = 22, posY = 22;   // x and y start position
+double dirX = -1, dirY = 0;    // initial direction vector
+double planeX = 0, planeY = 1; // the 2d raycaster version of camera plane
+
+// screen buffer
 Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works per scanline
 
 // 1D z-buffer
@@ -216,6 +222,169 @@ void loadWeapons() {
 	}
 }
 
+void raycast() {
+	for(int x = 0; x < w; x++) {
+		// calculate ray position and direction
+		double cameraX = 2 * x / double(w) - 1; // x-coordinate in camera space
+		double rayPosX = posX;
+		double rayPosY = posY;
+		double rayDirX = dirX + planeX * cameraX;
+		double rayDirY = dirY + planeY * cameraX;
+
+		// which box of the map we're in
+		int mapX = int(rayPosX);
+		int mapY = int(rayPosY);
+
+		// length of ray from current position to next x or y-side
+		double sideDistX;
+		double sideDistY;
+
+		// length of ray from one x or y-side to next x or y-side
+		double deltaDistX = sqrt(1 + (rayDirY * rayDirY) / (rayDirX * rayDirX));
+		double deltaDistY = sqrt(1 + (rayDirX * rayDirX) / (rayDirY * rayDirY));
+		double perpWallDist;
+
+		// what direction to step in x or y-direction (either +1 or -1)
+		int stepX;
+		int stepY;
+
+		int hit = 0; // was there a wall hit?
+		int side;    // was it a NS or a EW wall hit?
+
+		// calculate step and initial sideDist
+		if (rayDirX < 0) {
+			stepX = -1;
+			sideDistX = (rayPosX - mapX) * deltaDistX;
+		} else {
+			stepX = 1;
+			sideDistX = (mapX + 1.0 - rayPosX) * deltaDistX;
+		}
+
+		if (rayDirY < 0) {
+			stepY = -1;
+			sideDistY = (rayPosY - mapY) * deltaDistY;
+		} else {
+			stepY = 1;
+			sideDistY = (mapY + 1.0 - rayPosY) * deltaDistY;
+		}
+
+		// perform DDA
+		while (hit == 0) {
+			// jump to next map square, OR in x-direction, OR in y-direction
+			if (sideDistX < sideDistY) {
+				sideDistX += deltaDistX;
+				mapX += stepX;
+				side = 0;
+			} else {
+				sideDistY += deltaDistY;
+				mapY += stepY;
+				side = 1;
+			}
+
+			// check if ray has hit a wall
+			if (worldMap[mapX][mapY] > 0) {
+				hit = 1;
+			}
+		}
+
+		// calculate distance projected on camera direction (oblique distance will give fisheye effect!)
+		if (side == 0) {
+			perpWallDist = (mapX - rayPosX + (1 - stepX) / 2) / rayDirX;
+		} else {
+			perpWallDist = (mapY - rayPosY + (1 - stepY) / 2) / rayDirY;
+		}
+
+		// calculate height of line to draw on screen
+		int lineHeight = abs(int(h / perpWallDist));
+
+		// calculate lowest and highest pixel to fill in current stripe
+		int wallStart = -lineHeight / 2 + h / 2;
+		if(wallStart < 0) {
+			wallStart = 0;
+		}
+
+		int wallEnd = lineHeight / 2 + h / 2;
+		if(wallEnd >= h) {
+			wallEnd = h - 1;
+		}
+
+		// texturing calculations
+		int texNum = worldMap[mapX][mapY] - 1; // subtract 1 so texture 0 is used
+
+		// calculate value of wallX: where on wall the ray hit
+		double wallX;
+		if(side == 0) {
+			wallX = rayPosY + perpWallDist * rayDirY;
+		} else {
+			wallX = rayPosX + perpWallDist * rayDirX;
+		}
+		wallX -= floor((wallX));
+
+		// x-coordinate on the texture
+		int texX = int(wallX * double(texWidth));
+		if(side == 0 && rayDirX > 0) texX = texWidth - texX - 1;
+		if(side == 1 && rayDirY < 0) texX = texWidth - texX - 1;
+
+		// draw walls
+		for(int y = wallStart; y < wallEnd; y++) {
+			int d = y * 256 - h * 128 + lineHeight * 128; // 256 and 128 factors to avoid floats
+			int texY = ((d * texHeight) / lineHeight) / 256;
+			Uint32 color = texture[texNum][texHeight * texX + texY];
+			// make color darker for y-sides:
+			// R, G, and B byte each divided by 2 with a shift and binary and
+			if(side == 1) color = (color >> 1) & 8355711;
+			buffer[y][x] = color;
+		}
+
+		// set z-buffer for sprite casting
+		ZBuffer[x] = perpWallDist;
+
+		// floor casting
+		double floorXWall, floorYWall; // x and y positions of the floor texture pixel at the bottom of the wall
+
+		// 4 different wall directions possible
+		if(side == 0 && rayDirX > 0) {
+			floorXWall = mapX;
+			floorYWall = mapY + wallX;
+		} else if(side == 0 && rayDirX < 0) {
+			floorXWall = mapX + 1.0;
+			floorYWall = mapY + wallX;
+		} else if(side == 1 && rayDirY > 0) {
+			floorXWall = mapX + wallX;
+			floorYWall = mapY;
+		} else {
+			floorXWall = mapX + wallX;
+			floorYWall = mapY + 1.0;
+		}
+
+		double distWall, distPlayer, currentDist;
+
+		distWall = perpWallDist;
+		distPlayer = 0.0;
+
+		if(wallEnd < 0) wallEnd = h; // becomes 0 when the integer overflows
+
+		// draw the floor from wallEnd to the bottom of the screen
+		for(int y = wallEnd + 1; y < h; y++) {
+			currentDist = h / (2.0 * y - h);
+
+			double weight = (currentDist - distPlayer) / (distWall - distPlayer);
+
+			double currentFloorX = weight * floorXWall + (1.0 - weight) * posX;
+			double currentFloorY = weight * floorYWall + (1.0 - weight) * posY;
+
+			int floorTexX, floorTexY;
+			floorTexX = int(currentFloorX * texWidth) % texWidth;
+			floorTexY = int(currentFloorY * texHeight) % texHeight;
+
+			// floor
+			buffer[y][x] = (texture[1][texWidth * floorTexY + floorTexX]);
+			// ceiling (symmetrical)
+			buffer[h - y][x] = texture[2][texWidth * floorTexY + floorTexX];
+		}
+	}
+}
+
 // function used to sort the sprites
 void combSort(int* order, double* dist, int amount) {
 	int gap = amount;
@@ -262,10 +431,6 @@ void drawWeapon(int id, int seq) {
 }
 
 int main() {
-	double posX = 22, posY = 22;   // x and y start position
-	double dirX = -1, dirY = 0;    // initial direction vector
-	double planeX = 0, planeY = 1; // the 2d raycaster version of camera plane
-
 	unsigned int time = 0;         // time of current frame
 	unsigned int oldTime = 0;      // time of previous frame
 	unsigned int fpsLastShown = 0; // time fps counter was last updated
@@ -288,166 +453,7 @@ int main() {
 
 	while(!done()) {
 		// for each pixel in the width of the screen
-		for(int x = 0; x < w; x++) {
-			// calculate ray position and direction 
-			double cameraX = 2 * x / double(w) - 1; // x-coordinate in camera space
-			double rayPosX = posX;
-			double rayPosY = posY;
-			double rayDirX = dirX + planeX * cameraX;
-			double rayDirY = dirY + planeY * cameraX;
-
-			// which box of the map we're in  
-			int mapX = int(rayPosX);
-			int mapY = int(rayPosY);
-
-			// length of ray from current position to next x or y-side
-			double sideDistX;
-			double sideDistY;
-
-			// length of ray from one x or y-side to next x or y-side
-			double deltaDistX = sqrt(1 + (rayDirY * rayDirY) / (rayDirX * rayDirX));
-			double deltaDistY = sqrt(1 + (rayDirX * rayDirX) / (rayDirY * rayDirY));
-			double perpWallDist;
-
-			// what direction to step in x or y-direction (either +1 or -1)
-			int stepX;
-			int stepY;
-
-			int hit = 0; // was there a wall hit?
-			int side;    // was it a NS or a EW wall hit?
-
-			// calculate step and initial sideDist
-			if (rayDirX < 0) {
-				stepX = -1;
-				sideDistX = (rayPosX - mapX) * deltaDistX;
-			} else {
-				stepX = 1;
-				sideDistX = (mapX + 1.0 - rayPosX) * deltaDistX;
-			}
-
-			if (rayDirY < 0) {
-				stepY = -1;
-				sideDistY = (rayPosY - mapY) * deltaDistY;
-			} else {
-				stepY = 1;
-				sideDistY = (mapY + 1.0 - rayPosY) * deltaDistY;
-			}
-
-			// perform DDA
-			while (hit == 0) {
-				// jump to next map square, OR in x-direction, OR in y-direction
-				if (sideDistX < sideDistY) {
-					sideDistX += deltaDistX;
-					mapX += stepX;
-					side = 0;
-				} else {
-					sideDistY += deltaDistY;
-					mapY += stepY;
-					side = 1;
-				}
-
-				// check if ray has hit a wall
-				if (worldMap[mapX][mapY] > 0) {
-					hit = 1;
-				}
-			} 
-
-			// calculate distance projected on camera direction (oblique distance will give fisheye effect!)
-			if (side == 0) {
-				perpWallDist = (mapX - rayPosX + (1 - stepX) / 2) / rayDirX;
-			} else {
-				perpWallDist = (mapY - rayPosY + (1 - stepY) / 2) / rayDirY;
-			}
-
-			// calculate height of line to draw on screen
-			int lineHeight = abs(int(h / perpWallDist));
-
-			// calculate lowest and highest pixel to fill in current stripe
-			int wallStart = -lineHeight / 2 + h / 2;
-			if(wallStart < 0) {
-				wallStart = 0;
-			}
-
-			int wallEnd = lineHeight / 2 + h / 2;
-			if(wallEnd >= h) {
-				wallEnd = h - 1;
-			}
-
-			// texturing calculations
-			int texNum = worldMap[mapX][mapY] - 1; // subtract 1 so texture 0 is used
-
-			// calculate value of wallX: where on wall the ray hit
-			double wallX;
-			if(side == 0) {
-				wallX = rayPosY + perpWallDist * rayDirY;
-			} else {
-				wallX = rayPosX + perpWallDist * rayDirX;
-			}
-			wallX -= floor((wallX));
-
-			// x-coordinate on the texture
-			int texX = int(wallX * double(texWidth));
-			if(side == 0 && rayDirX > 0) texX = texWidth - texX - 1;
-			if(side == 1 && rayDirY < 0) texX = texWidth - texX - 1;
-
-			// draw walls
-			for(int y = wallStart; y < wallEnd; y++) {
-				int d = y * 256 - h * 128 + lineHeight * 128; // 256 and 128 factors to avoid floats
-				int texY = ((d * texHeight) / lineHeight) / 256;
-				Uint32 color = texture[texNum][texHeight * texX + texY];
-				// make color darker for y-sides:
-				// R, G, and B byte each divided by 2 with a shift and binary and
-				if(side == 1) color = (color >> 1) & 8355711;
-				buffer[y][x] = color;
-			}
-
-			// set z-buffer for sprite casting
-			ZBuffer[x] = perpWallDist;
-
-			// floor casting
-			double floorXWall, floorYWall; // x and y positions of the floor texture pixel at the bottom of the wall
-
-			// 4 different wall directions possible
-			if(side == 0 && rayDirX > 0) {
-				floorXWall = mapX;
-				floorYWall = mapY + wallX;
-			} else if(side == 0 && rayDirX < 0) {
-				floorXWall = mapX + 1.0;
-				floorYWall = mapY + wallX;
-			} else if(side == 1 && rayDirY > 0) {
-				floorXWall = mapX + wallX;
-				floorYWall = mapY;
-			} else {
-				floorXWall = mapX + wallX;
-				floorYWall = mapY + 1.0;
-			}
-
-			double distWall, distPlayer, currentDist;
-
-			distWall = perpWallDist;
-			distPlayer = 0.0;
-
-			if(wallEnd < 0) wallEnd = h; // becomes 0 when the integer overflows
-
-			// draw the floor from wallEnd to the bottom of the screen
-			for(int y = wallEnd + 1; y < h; y++) {
-				currentDist = h / (2.0 * y - h);
-
-				double weight = (currentDist - distPlayer) / (distWall - distPlayer);
-
-				double currentFloorX = weight * floorXWall + (1.0 - weight) * posX;
-				double currentFloorY = weight * floorYWall + (1.0 - weight) * posY;
-
-				int floorTexX, floorTexY;
-				floorTexX = int(currentFloorX * texWidth) % texWidth;
-				floorTexY = int(currentFloorY * texHeight) % texHeight;
-
-				// floor
-				buffer[y][x] = (texture[1][texWidth * floorTexY + floorTexX]);
-				// ceiling (symmetrical)
-				buffer[h - y][x] = texture[2][texWidth * floorTexY + floorTexX];
-			}
-		}
+		raycast();
 
 		// sprite casting
 		// sort sprites from furthest to closest
