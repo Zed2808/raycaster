@@ -157,6 +157,14 @@ ColorRGB::ColorRGB() {
 	this->b = 0;
 }
 
+ColorRGB operator*(const ColorRGB& color, double x) {
+	return ColorRGB(color.r * x, color.g * x, color.b * x);
+}
+
+ColorRGB operator/(const ColorRGB& color, int x) {
+	return ColorRGB(color.r / x, color.g / x, color.b / x);
+}
+
 bool operator!=(const ColorRGB& color1, const ColorRGB& color2) {
 	return !(color1.r == color2.r && color1.g == color2.g && color1.b == color2.b);
 }

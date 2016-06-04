@@ -36,7 +36,7 @@ using namespace SmallCG;
 #define mapWidth 24
 #define mapHeight 24
 
-#define texCount 4   // number of textures to load
+#define texCount 7   // number of textures to load
 #define numSprites 3 // number of sprite instances in the map
 #define numWeapons 3 // number of weapons to load
 
@@ -62,7 +62,88 @@ struct Weapon {
 	Mix_Chunk* sfxFire;
 };
 
-int worldMap[mapWidth][mapHeight] = {
+int mapCeiling[mapWidth][mapHeight] = {
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6,6,6,6,6,6,6},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+};
+
+int mapFloor[mapWidth][mapHeight] = {
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+};
+
+int mapWall[mapWidth][mapHeight] = {
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,4,4,4,4,4,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,4,4,4,0,4},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+};
+
+bool mapSolid[mapWidth][mapHeight] = {
 	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
@@ -72,7 +153,7 @@ int worldMap[mapWidth][mapHeight] = {
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1},
-	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,1},
+	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
 	{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1},
@@ -129,6 +210,9 @@ void loadTextures() {
 	loadImage(texture[1], tw, th, "data/textures/tiles.png");
 	loadImage(texture[2], tw, th, "data/textures/ceiling.png");
 	loadImage(texture[3], tw, th, "data/sprites/imp_standing.png");
+	loadImage(texture[4], tw, th, "data/textures/bricks2.png");
+	loadImage(texture[5], tw, th, "data/textures/rocks.png");
+	loadImage(texture[6], tw, th, "data/textures/ceiling2.png");
 
 	// swap texture x/y since they're used as vertical stripes
 	for(size_t i = 0; i < texCount; i++) {
@@ -288,7 +372,7 @@ void raycast() {
 			}
 
 			// check if ray has hit a wall
-			if (worldMap[mapX][mapY] > 0) {
+			if (mapSolid[mapX][mapY]) {
 				hit = 1;
 			}
 		}
@@ -315,7 +399,7 @@ void raycast() {
 		}
 
 		// texturing calculations
-		int texNum = worldMap[mapX][mapY] - 1; // subtract 1 so texture 0 is used
+		int texNum = mapWall[mapX][mapY];
 
 		// calculate value of wallX: where on wall the ray hit
 		double wallX;
@@ -336,9 +420,8 @@ void raycast() {
 			int d = y * 256 - h * 128 + lineHeight * 128; // 256 and 128 factors to avoid floats
 			int texY = ((d * texHeight) / lineHeight) / 256;
 			Uint32 color = texture[texNum][texHeight * texX + texY];
-			// make color darker for y-sides:
-			// R, G, and B byte each divided by 2 with a shift and binary and
-			if(side == 1) color = (color >> 1) & 8355711;
+			// make color darker for y-sides
+			if(side == 1) color = RGBtoINT(INTtoRGB(color) * 0.7);
 			buffer[y][x] = color;
 		}
 
@@ -384,9 +467,11 @@ void raycast() {
 			floorTexY = int(currentFloorY * texHeight) % texHeight;
 
 			// floor
-			buffer[y][x] = (texture[1][texWidth * floorTexY + floorTexX]);
+			int floorTex = mapFloor[int(currentFloorX)][int(currentFloorY)];
+			buffer[y][x] = (texture[floorTex][texWidth * floorTexY + floorTexX]);
 			// ceiling (symmetrical)
-			buffer[h - y][x] = texture[2][texWidth * floorTexY + floorTexX];
+			int ceilingTex = mapCeiling[int(currentFloorX)][int(currentFloorY)];
+			buffer[h - y][x] = texture[ceilingTex][texWidth * floorTexY + floorTexX];
 		}
 	}
 }
@@ -565,26 +650,26 @@ int main(int argc, char* argv[]) {
 
 		// move forward if no wall in front of you
 		if (keyDown(SDL_SCANCODE_W)) {
-			if(worldMap[int(posX + dirX * moveSpeed)][int(posY)] == false) deltaPosX += dirX;
-			if(worldMap[int(posX)][int(posY + dirY * moveSpeed)] == false) deltaPosY += dirY;
+			if(!mapSolid[int(posX + dirX * moveSpeed)][int(posY)]) deltaPosX += dirX;
+			if(!mapSolid[int(posX)][int(posY + dirY * moveSpeed)]) deltaPosY += dirY;
 		}
 		
 		// move backwards if no wall behind you
 		if (keyDown(SDL_SCANCODE_S)) {
-			if(worldMap[int(posX - dirX * moveSpeed)][int(posY)] == false) deltaPosX -= dirX;
-			if(worldMap[int(posX)][int(posY - dirY * moveSpeed)] == false) deltaPosY -= dirY;
+			if(!mapSolid[int(posX - dirX * moveSpeed)][int(posY)]) deltaPosX -= dirX;
+			if(!mapSolid[int(posX)][int(posY - dirY * moveSpeed)]) deltaPosY -= dirY;
 		}
 
 		// move left if no wall to the left
 		if (keyDown(SDL_SCANCODE_A)) {
-			if(worldMap[int(posX - planeX * moveSpeed)][int(posY)] == false) deltaPosX -= planeX;
-			if(worldMap[int(posX)][int(posY - planeY * moveSpeed)] == false) deltaPosY -= planeY;
+			if(!mapSolid[int(posX - planeX * moveSpeed)][int(posY)]) deltaPosX -= planeX;
+			if(!mapSolid[int(posX)][int(posY - planeY * moveSpeed)]) deltaPosY -= planeY;
 		}
 		
 		// strafe right if no wall to the right
 		if (keyDown(SDL_SCANCODE_D)) {
-			if(worldMap[int(posX + planeX * moveSpeed)][int(posY)] == false) deltaPosX += planeX;
-			if(worldMap[int(posX)][int(posY + planeY * moveSpeed)] == false) deltaPosY += planeY;
+			if(!mapSolid[int(posX + planeX * moveSpeed)][int(posY)]) deltaPosX += planeX;
+			if(!mapSolid[int(posX)][int(posY + planeY * moveSpeed)]) deltaPosY += planeY;
 		}
 
 		// pythagorean theorem to get actual vector

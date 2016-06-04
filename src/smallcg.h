@@ -12,15 +12,17 @@ namespace SmallCG {
 // COLOR STRUCTS ///////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct ColorRGB {
-	Uint8 r;
-	Uint8 g;
-	Uint8 b;
+	int r;
+	int g;
+	int b;
 
 	ColorRGB(Uint8 r, Uint8 g, Uint8 b);
 	ColorRGB(const ColorRGB& color);
 	ColorRGB();
 };
 
+ColorRGB operator*(const ColorRGB& color, double x);
+ColorRGB operator/(const ColorRGB& color, int x);
 bool operator!=(const ColorRGB& color1, const ColorRGB& color2);
 
 static const ColorRGB RGB_Black    (  0,   0,   0);
