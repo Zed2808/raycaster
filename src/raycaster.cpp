@@ -190,6 +190,9 @@ std::vector<Uint32> texSprite[texSpriteCount];
 // loaded weapons
 Weapon weapon[numWeapons];
 
+// time the current frame has taken to render
+double frameTime = 0;
+
 // player position variables
 double posX = 22, posY = 22;   // x and y start position
 double dirX = -1, dirY = 0;    // initial direction vector
@@ -619,6 +622,95 @@ void spritecast() {
 	}
 }
 
+void move() {
+	// movement & rotation modifiers
+	double moveSpeedMultiplier = 5.0; // squares/second
+	double rotSpeedMultiplier = 3.0;  // radians/second
+	double moveSpeed = frameTime * moveSpeedMultiplier;
+	double rotSpeed = frameTime * rotSpeedMultiplier;
+	double mouseSens = 0.05;
+
+	// amount to move player in x/y directions (0.0 - 1.0)
+	double deltaPosX = 0;
+	double deltaPosY = 0;
+
+	// move forward if no wall in front of you
+	if (keyDown(SDL_SCANCODE_W)) {
+		if(!mapSolid[int(posX + dirX * moveSpeed)][int(posY)]) deltaPosX += dirX;
+		if(!mapSolid[int(posX)][int(posY + dirY * moveSpeed)]) deltaPosY += dirY;
+	}
+
+	// move backwards if no wall behind you
+	if (keyDown(SDL_SCANCODE_S)) {
+		if(!mapSolid[int(posX - dirX * moveSpeed)][int(posY)]) deltaPosX -= dirX;
+		if(!mapSolid[int(posX)][int(posY - dirY * moveSpeed)]) deltaPosY -= dirY;
+	}
+
+	// move left if no wall to the left
+	if (keyDown(SDL_SCANCODE_A)) {
+		if(!mapSolid[int(posX - planeX * moveSpeed)][int(posY)]) deltaPosX -= planeX;
+		if(!mapSolid[int(posX)][int(posY - planeY * moveSpeed)]) deltaPosY -= planeY;
+	}
+
+	// strafe right if no wall to the right
+	if (keyDown(SDL_SCANCODE_D)) {
+		if(!mapSolid[int(posX + planeX * moveSpeed)][int(posY)]) deltaPosX += planeX;
+		if(!mapSolid[int(posX)][int(posY + planeY * moveSpeed)]) deltaPosY += planeY;
+	}
+
+	// pythagorean theorem to get actual vector
+	double diagonal = sqrt(pow(deltaPosX, 2) + pow(deltaPosY, 2));
+
+	// normalize vector to not go above 1.0
+	if(diagonal > 1) {
+		deltaPosX /= diagonal;
+		deltaPosY /= diagonal;
+	}
+
+	// change x & y position by position delta modified by move speed
+	posX += deltaPosX * moveSpeed;
+	posY += deltaPosY * moveSpeed;
+
+	// mouse movement along x axis
+	int dx = 0;
+
+	// get mouse movement along x axis
+	SDL_GetRelativeMouseState(&dx, NULL);
+
+	// set rotation based on dx, rotSpeed, and mouseSens
+	double mouseRot = -dx * rotSpeed * mouseSens;
+
+	// rotate based on mouse movement
+	double oldDirX = dirX;
+	dirX = dirX * cos(mouseRot) - dirY * sin(mouseRot);
+	dirY = oldDirX * sin(mouseRot) + dirY * cos(mouseRot);
+	double oldPlaneX = planeX;
+	planeX = planeX * cos(mouseRot) - planeY * sin(mouseRot);
+	planeY = oldPlaneX * sin(mouseRot) + planeY * cos(mouseRot);
+
+	// rotate to the right
+	if (keyDown(SDL_SCANCODE_PERIOD)) {
+		// both camera direction and camera plane must be rotated
+		double oldDirX = dirX;
+		dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
+		dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
+		double oldPlaneX = planeX;
+		planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
+		planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
+	}
+
+	// rotate to the left
+	if (keyDown(SDL_SCANCODE_COMMA)) {
+		// both camera direction and camera plane must be rotated
+		double oldDirX = dirX;
+		dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
+		dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
+		double oldPlaneX = planeX;
+		planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
+		planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
+	}
+}
+
 void drawWeapon(int id, int seq) {
 	// take the sequence in the animation and convert to the actual frame to draw
 	int frame = weapon[id].frameSequence[seq];
@@ -684,94 +776,9 @@ int main(int argc, char* argv[]) {
 		// timing for input and FPS counter
 		oldTime = time;
 		time = SDL_GetTicks();
-		double frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
+		frameTime = (time - oldTime) / 1000.0; // time this frame has taken (seconds)
 
-		// movement & rotation modifiers
-		double moveSpeedMultiplier = 5.0; // squares/second
-		double rotSpeedMultiplier = 3.0;  // radians/second
-		double moveSpeed = frameTime * moveSpeedMultiplier;
-		double rotSpeed = frameTime * rotSpeedMultiplier;
-		double mouseSens = 0.05;
-
-		// amount to move player in x/y directions (0.0 - 1.0)
-		double deltaPosX = 0;
-		double deltaPosY = 0;
-
-		// move forward if no wall in front of you
-		if (keyDown(SDL_SCANCODE_W)) {
-			if(!mapSolid[int(posX + dirX * moveSpeed)][int(posY)]) deltaPosX += dirX;
-			if(!mapSolid[int(posX)][int(posY + dirY * moveSpeed)]) deltaPosY += dirY;
-		}
-		
-		// move backwards if no wall behind you
-		if (keyDown(SDL_SCANCODE_S)) {
-			if(!mapSolid[int(posX - dirX * moveSpeed)][int(posY)]) deltaPosX -= dirX;
-			if(!mapSolid[int(posX)][int(posY - dirY * moveSpeed)]) deltaPosY -= dirY;
-		}
-
-		// move left if no wall to the left
-		if (keyDown(SDL_SCANCODE_A)) {
-			if(!mapSolid[int(posX - planeX * moveSpeed)][int(posY)]) deltaPosX -= planeX;
-			if(!mapSolid[int(posX)][int(posY - planeY * moveSpeed)]) deltaPosY -= planeY;
-		}
-		
-		// strafe right if no wall to the right
-		if (keyDown(SDL_SCANCODE_D)) {
-			if(!mapSolid[int(posX + planeX * moveSpeed)][int(posY)]) deltaPosX += planeX;
-			if(!mapSolid[int(posX)][int(posY + planeY * moveSpeed)]) deltaPosY += planeY;
-		}
-
-		// pythagorean theorem to get actual vector
-		double diagonal = sqrt(pow(deltaPosX, 2) + pow(deltaPosY, 2));
-
-		// normalize vector to not go above 1.0
-		if(diagonal > 1) {
-			deltaPosX /= diagonal;
-			deltaPosY /= diagonal;
-		}
-
-		// change x & y position by position delta modified by move speed
-		posX += deltaPosX * moveSpeed;
-		posY += deltaPosY * moveSpeed;
-
-		// mouse movement along x axis
-		int dx = 0;
-
-		// get mouse movement along x axis
-		SDL_GetRelativeMouseState(&dx, NULL);
-
-		// set rotation based on dx, rotSpeed, and mouseSens
-		double mouseRot = -dx * rotSpeed * mouseSens;
-
-		// rotate based on mouse movement
-		double oldDirX = dirX;
-		dirX = dirX * cos(mouseRot) - dirY * sin(mouseRot);
-		dirY = oldDirX * sin(mouseRot) + dirY * cos(mouseRot);
-		double oldPlaneX = planeX;
-		planeX = planeX * cos(mouseRot) - planeY * sin(mouseRot);
-		planeY = oldPlaneX * sin(mouseRot) + planeY * cos(mouseRot);
-
-		// rotate to the right
-		if (keyDown(SDL_SCANCODE_PERIOD)) {
-			// both camera direction and camera plane must be rotated
-			double oldDirX = dirX;
-			dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
-			dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
-			double oldPlaneX = planeX;
-			planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
-			planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
-		}
-		
-		// rotate to the left
-		if (keyDown(SDL_SCANCODE_COMMA)) {
-			// both camera direction and camera plane must be rotated
-			double oldDirX = dirX;
-			dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
-			dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
-			double oldPlaneX = planeX;
-			planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
-			planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
-		}
+		move();
 
 		// fire currently equipped weapon
 		if ((keyDown(SDL_SCANCODE_SPACE) || mouseDown(SDL_BUTTON_LEFT)) && !animateWeapon) {
