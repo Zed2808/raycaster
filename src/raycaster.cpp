@@ -757,7 +757,7 @@ int main(int argc, char* argv[]) {
 	int equippedWeapon = 0;
 	bool animateWeapon = false;
 	double lastWeaponFrameTime = 0;
-	int weaponFrame = 0;
+	unsigned int weaponFrame = 0;
 
 	// load environment textures & sprites
 	loadTextures();
