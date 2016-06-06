@@ -26,6 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <iostream>
 
+#include "entity.hpp"
+
 #include "smallcg.h"
 using namespace SmallCG;
 
@@ -44,24 +46,6 @@ using namespace SmallCG;
 #define numWeapons 3      // number of weapons to load
 
 int fullscreen = 0;
-
-class Entity {
-	public:
-		double x;
-		double y;
-		int texture;
-};
-
-class Enemy : public Entity {
-	public:
-		Enemy(double x, double y, int texture);
-};
-
-Enemy::Enemy(double x, double y, int texture) {
-	this->x = x;
-	this->y = y;
-	this->texture = texture;
-}
 
 struct Weapon {
 	std::string name;

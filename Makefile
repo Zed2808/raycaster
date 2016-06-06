@@ -18,11 +18,14 @@ all: $(EXECUTABLE)
 debug: CCFLAGS += -g
 debug: $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJ)smallcg.o $(OBJ)raycaster.o
-	$(CC) $(CCFLAGS) -o raycaster $(OBJ)smallcg.o $(OBJ)raycaster.o $(LIBS)
+$(EXECUTABLE): $(OBJ)smallcg.o $(OBJ)entity.o $(OBJ)raycaster.o
+	$(CC) $(CCFLAGS) -o raycaster $(OBJ)smallcg.o $(OBJ)entity.o $(OBJ)raycaster.o $(LIBS)
 
 $(OBJ)smallcg.o: $(SRC)smallcg.cpp $(SRC)smallcg.h
 	$(CC) $(CCFLAGS) -c -o $(OBJ)smallcg.o $(SRC)smallcg.cpp
+
+$(OBJ)entity.o: $(SRC)entity.cpp $(SRC)entity.hpp
+	$(CC) $(CCFLAGS) -c -o $(OBJ)entity.o $(SRC)entity.cpp
 
 $(OBJ)raycaster.o: $(SRC)raycaster.cpp
 	$(CC) $(CCFLAGS) -c -o $(OBJ)raycaster.o $(SRC)raycaster.cpp
