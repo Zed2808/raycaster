@@ -45,11 +45,23 @@ using namespace SmallCG;
 
 int fullscreen = 0;
 
-struct Sprite {
-	double x;
-	double y;
-	int texture;
+class Entity {
+	public:
+		double x;
+		double y;
+		int texture;
 };
+
+class Enemy : public Entity {
+	public:
+		Enemy(double x, double y, int texture);
+};
+
+Enemy::Enemy(double x, double y, int texture) {
+	this->x = x;
+	this->y = y;
+	this->texture = texture;
+}
 
 struct Weapon {
 	std::string name;
@@ -173,12 +185,12 @@ int mapFloor[mapWidth][mapHeight] = {
 	{1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0}
 };
 
-Sprite sprite[numSprites] = {
+Entity sprite[numSprites] = {
 	// some Doom imps
-	{9.5,  12.0, 0},
-	{14.5, 12.0, 0},
-	{12.0, 9.5,  0},
-	{12.0, 14.5, 0}
+	Enemy(9.5, 12.0, 0),
+	Enemy(14.5, 12.0, 0),
+	Enemy(12.0, 9.5, 0),
+	Enemy(12.0, 14.5, 0)
 };
 
 // loaded textures
