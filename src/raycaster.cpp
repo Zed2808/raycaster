@@ -41,8 +41,8 @@ using namespace SmallCG;
 #define texWallCount 3    // number of wall textures to load
 #define texCeilingCount 2 // number of ceiling textures to load
 #define texFloorCount 3   // number of floor textures to load
-#define texSpriteCount 1  // number of sprite textures to load
-#define numSprites 4      // number of sprite instances in the map
+#define texSpriteCount 2  // number of sprite textures to load
+#define numEnts 6         // number of sprite instances in the map
 #define numWeapons 3      // number of weapons to load
 
 int fullscreen = 0;
@@ -169,12 +169,14 @@ int mapFloor[mapWidth][mapHeight] = {
 	{1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0}
 };
 
-Entity sprite[numSprites] = {
-	// some Doom imps
-	Enemy(9.5, 12.0, 0),
-	Enemy(14.5, 12.0, 0),
-	Enemy(12.0, 9.5, 0),
-	Enemy(12.0, 14.5, 0)
+Entity entity[numEnts] = {
+	// some entities
+	Imp(9.5, 12.0),
+	Imp(14.5, 12.0),
+	Imp(12.0, 9.5),
+	Imp(12.0, 14.5),
+	Barrel(14.5, 10.5, 1),
+	Barrel(14.5, 13.5, 1)
 };
 
 // loaded textures
@@ -201,8 +203,8 @@ Uint32 buffer[screenHeight][screenWidth]; // y-coordinate first because it works
 double ZBuffer[screenWidth];
 
 // arrays used to sort the sprites
-int spriteOrder[numSprites];
-double spriteDistance[numSprites];
+int spriteOrder[numEnts];
+double spriteDistance[numEnts];
 
 void loadTextures() {
 	// set each element of texture vectors to the size of the textures to load
@@ -237,6 +239,7 @@ void loadTextures() {
 	loadImage(texFloor[2], tw, th, "data/textures/rocks.png");
 
 	loadImage(texSprite[0], tw, th, "data/sprites/imp_standing.png");
+	loadImage(texSprite[1], tw, th, "data/sprites/bar1a0.png");
 
 	// swap texture x/y since they're used as vertical stripes
 	for(size_t i = 0; i < texWallCount; i++) {
@@ -549,18 +552,18 @@ void combSort(int* order, double* dist, int amount) {
 
 void spritecast() {
 	// sort sprites from furthest to closest
-	for(int i = 0; i < numSprites; i++) {
+	for(int i = 0; i < numEnts; i++) {
 		spriteOrder[i] = i;
-		spriteDistance[i] = ((posX - sprite[i].x) * (posX - sprite[i].x) + (posY - sprite[i].y) * (posY - sprite[i].y));
+		spriteDistance[i] = ((posX - entity[i].x) * (posX - entity[i].x) + (posY - entity[i].y) * (posY - entity[i].y));
 	}
 
-	combSort(spriteOrder, spriteDistance, numSprites);
+	combSort(spriteOrder, spriteDistance, numEnts);
 
 	// after sorting the sprites, do the projection and draw them
-	for(int i = 0; i < numSprites; i++) {
+	for(int i = 0; i < numEnts; i++) {
 		// translate sprite position to be relative to camera
-		double spriteX = sprite[spriteOrder[i]].x - posX;
-		double spriteY = sprite[spriteOrder[i]].y - posY;
+		double spriteX = entity[spriteOrder[i]].x - posX;
+		double spriteY = entity[spriteOrder[i]].y - posY;
 
 		// transform sprite with the inverse camera matrix:
 		// [ planeX  dirX ] - 1                                            [ dirY     -dirX ]
@@ -574,18 +577,21 @@ void spritecast() {
 
 		int spriteScreenX = int((w / 2) * (1 + transformX / transformY));
 
+		// y-distance to move scaled sprite
+		int yMoveScreen = int(entity[spriteOrder[i]].moveY / transformY);
+
 		// calculate the height of the sprite on screen
-		int spriteHeight = abs(int(h / transformY)); // using transformY instead of the real distance prevents fisheye
+		int spriteHeight = abs(int(h / transformY)) * entity[spriteOrder[i]].scaleY; // using transformY instead of the real distance prevents fisheye
 
 		// calculate lowest and highest pixel to fill in current stripe
-		int drawStartY = -spriteHeight / 2 + h / 2;
+		int drawStartY = -spriteHeight / 2 + h / 2 + yMoveScreen;
 		if(drawStartY < 0) drawStartY = 0;
 
-		int drawEndY = spriteHeight / 2 + h / 2;
+		int drawEndY = spriteHeight / 2 + h / 2 + yMoveScreen;
 		if(drawEndY >= h) drawEndY = h - 1;
 
 		// calculate the width of the sprite
-		int spriteWidth = abs(int(h / transformY));
+		int spriteWidth = abs(int(h / transformY)) * entity[spriteOrder[i]].scaleX;
 
 		int drawStartX = -spriteWidth / 2 + spriteScreenX;
 		if(drawStartX < 0) drawStartX = 0;
@@ -604,12 +610,12 @@ void spritecast() {
 			// 4) ZBuffer, with perpendicular distance
 			if(transformY > 0 && stripe > 0 && stripe < w && transformY < ZBuffer[stripe]) {
 				for(int y = drawStartY; y < drawEndY; y++) {
-					int d = y * 256 - h * 128 + spriteHeight * 128; // 256 and 128 factors to avoid floats
+					int d = (y - yMoveScreen) * 256 - h * 128 + spriteHeight * 128; // 256 and 128 factors to avoid floats
 					int texY = ((d * texHeight) / spriteHeight) / 256;
-					Uint32 color = texSprite[sprite[spriteOrder[i]].texture][texWidth * texX + texY]; // get current color from the texture
+					Uint32 color = texSprite[entity[spriteOrder[i]].texture][texWidth * texX + texY]; // get current color from the texture
 
-					// color pixel if it isn't the invisible color (black)
-					if((color & 0x00FFFFFF) != 0) {
+					// color pixel if it isn't the invisible color (cyan)
+					if(color != 0xFF00FFFF) {
 						buffer[y][stripe] = color;
 					}
 				}
